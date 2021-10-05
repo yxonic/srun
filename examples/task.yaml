@@ -1,0 +1,5 @@
+stages:
+  - name: main
+    image: python:3
+    script:
+      - python -c "print('hello')"
