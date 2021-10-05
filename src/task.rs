@@ -34,28 +34,26 @@ pub struct Task {
 }
 
 impl Task {
-    pub fn run<T: Recorder>(&self, runner: &mut Runner<T>) -> Result<(), Error> {
+    pub async fn run<'docker, T: Recorder>(self, runner: &mut Runner<'docker, T>) -> Result<(), Error> {
         // TODO:
         // 1. prepare assets properly
         // 2. fill stage spec with default value, or die if not provided anyhow
         // 3. stage spec construction
         runner.prepare_assets().map_err(|e| e.into())?;
         let name = String::from("main");
-        let empty = vec![];
-        let stages = self.stages.as_ref().unwrap_or(&empty);
-        for stage in stages {
-            let empty_vec = vec![];
-            let empty_map = HashMap::new();
+        let stages = self.stages.unwrap_or(vec![]);
+        for stage in stages.into_iter() {
             runner
                 .run_stage(
                     stage.name.as_ref().unwrap_or(&name),
                     StageSpec {
-                        image: stage.image.as_ref().unwrap_or(&name),
-                        extend: stage.extend.as_ref().unwrap_or(&empty_vec),
-                        script: stage.script.as_ref().unwrap_or(&empty_vec),
-                        envs: stage.envs.as_ref().unwrap_or(&empty_map),
+                        image: stage.image.unwrap_or_default(),
+                        extend: stage.extend.unwrap_or_default(),
+                        script: stage.script.unwrap_or_default(),
+                        envs: stage.envs.unwrap_or_default(),
                     },
                 )
+                .await
                 .map_err(|e| e.into())?;
         }
         Ok(())

@@ -1286,11 +1286,13 @@ dependencies = [
  "cached-path",
  "clap",
  "env_logger",
+ "futures",
  "log",
  "serde",
  "serde_yaml",
  "shiplift",
  "thiserror",
+ "tokio",
 ]
 
 [[package]]
@@ -1421,7 +1423,19 @@ dependencies = [
  "mio",
  "num_cpus",
  "pin-project-lite",
+ "tokio-macros",
  "winapi",
+]
+
+[[package]]
+name = "tokio-macros"
+version = "1.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "154794c8f499c2619acd19e839294703e9e32e7630ef5f46ea80d4ef0fbee5eb"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

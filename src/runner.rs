@@ -14,28 +14,28 @@ pub enum Status {
 }
 
 #[derive(Debug)]
-pub struct StageSpec<'a> {
-    pub(crate) image: &'a str,
-    pub(crate) extend: &'a Vec<String>,
-    pub(crate) script: &'a Vec<String>,
-    pub(crate) envs: &'a HashMap<String, String>,
+pub struct StageSpec {
+    pub(crate) image: String,
+    pub(crate) extend: Vec<String>,
+    pub(crate) script: Vec<String>,
+    pub(crate) envs: HashMap<String, String>,
 }
 
 /// Task runner that prepares for the task, runs the task, tracks running state,
 /// and report the process. 
 ///
 /// You should always initiate a new runner for each task.
-pub struct Runner<TRecorder: Recorder> {
+pub struct Runner<'docker, TRecorder: Recorder> {
     assets: AssetManager,
-    sandbox: Sandbox,
+    sandbox: Sandbox<'docker>,
     status: Status,
     recorder: TRecorder,
 }
 
-impl Runner<TextRecorder> {
-    pub fn new() -> Runner<TextRecorder> {
+impl<'a> Runner<'a, TextRecorder> {
+    pub fn new(docker: &shiplift::Docker) -> Runner<TextRecorder> {
         Runner {
-            sandbox: Sandbox {},
+            sandbox: Sandbox::new(docker),
             assets: AssetManager {},
             recorder: TextRecorder {},
             status: Status::Start,
@@ -43,7 +43,7 @@ impl Runner<TextRecorder> {
     }
 }
 
-impl<T: Recorder> Runner<T> {
+impl<'a, T: Recorder> Runner<'a, T> {
     fn set_status(&mut self, status: Status) -> Result<(), HandledError> {
         self.status = status;
         // do not report error again when reporting has failed
@@ -55,16 +55,16 @@ impl<T: Recorder> Runner<T> {
         self.assets.prepare().handle(self)?;
         Ok(())
     }
-    pub fn run_stage(&mut self, name: &str, _stage: StageSpec) -> Result<(), HandledError> {
+    pub async fn run_stage(&mut self, name: &str, stage: StageSpec) -> Result<(), HandledError> {
         self.set_status(Status::BuildStageScript(name.into()))?;
-        self.sandbox.build().handle(self)?;
+        self.sandbox.build(&stage.image, &stage.extend).await.handle(self)?;
         self.set_status(Status::RunStage(name.into()))?;
         self.sandbox.run().handle(self)?;
         Ok(())
     }
 }
 
-impl<TRec: Recorder> Drop for Runner<TRec> {
+impl<'a, T: Recorder> Drop for Runner<'a, T> {
     fn drop(&mut self) {
         if matches!(self.status, Status::Error(_)) {
             // runner is already dead, and the error has been reported
