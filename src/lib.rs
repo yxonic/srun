@@ -4,10 +4,10 @@
 //! remote runner service.
 
 pub mod asset;
-pub mod sandbox;
-pub mod runner;
-mod task;
 mod error;
+pub mod runner;
+pub mod sandbox;
+mod task;
 
 pub use error::Error;
 pub use runner::Runner;

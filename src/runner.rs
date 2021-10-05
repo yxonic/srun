@@ -21,11 +21,15 @@ pub struct StageSpec<'a> {
     pub(crate) envs: &'a HashMap<String, String>,
 }
 
-pub struct Runner<TRec: Recorder> {
-    sandbox: Sandbox,
+/// Task runner that prepares for the task, runs the task, tracks running state,
+/// and report the process. 
+///
+/// You should always initiate a new runner for each task.
+pub struct Runner<TRecorder: Recorder> {
     assets: AssetManager,
-    recorder: TRec,
+    sandbox: Sandbox,
     status: Status,
+    recorder: TRecorder,
 }
 
 impl Runner<TextRecorder> {
@@ -39,24 +43,23 @@ impl Runner<TextRecorder> {
     }
 }
 
-impl<TRec: Recorder> Runner<TRec> {
-    fn set_status(&mut self, status: Status) -> Result<(), Error> {
+impl<T: Recorder> Runner<T> {
+    fn set_status(&mut self, status: Status) -> Result<(), HandledError> {
         self.status = status;
-        self.recorder.emit_status(&self.status)?;
+        // do not report error again when reporting has failed
+        self.recorder.emit_status(&self.status).ignore()?;
         Ok(())
     }
-    pub fn prepare_assets(&mut self) -> Result<(), Error> {
-        self.set_status(Status::PrepareAssets).report_err(self)?;
-        self.assets.prepare().report_err(self)?;
+    pub fn prepare_assets(&mut self) -> Result<(), HandledError> {
+        self.set_status(Status::PrepareAssets)?;
+        self.assets.prepare().handle(self)?;
         Ok(())
     }
-    pub fn run_stage(&mut self, name: &str, _stage: StageSpec) -> Result<(), Error> {
-        self.set_status(Status::BuildStageScript(name.into()))
-            .report_err(self)?;
-        self.sandbox.build().report_err(self)?;
-        self.set_status(Status::RunStage(name.into()))
-            .report_err(self)?;
-        self.sandbox.run().report_err(self)?;
+    pub fn run_stage(&mut self, name: &str, _stage: StageSpec) -> Result<(), HandledError> {
+        self.set_status(Status::BuildStageScript(name.into()))?;
+        self.sandbox.build().handle(self)?;
+        self.set_status(Status::RunStage(name.into()))?;
+        self.sandbox.run().handle(self)?;
         Ok(())
     }
 }
@@ -93,15 +96,30 @@ impl Recorder for TextRecorder {
     }
 }
 
-trait Reporter<TR: Recorder> {
-    fn report_err(self, runner: &mut Runner<TR>) -> Self;
+/// Represents an error that has been properly handled (reported to the
+/// recorder) by runner.
+pub struct HandledError(Error);
+
+impl Into<Error> for HandledError {
+    fn into(self) -> Error {
+        self.0
+    }
 }
 
-impl<T, TR: Recorder> Reporter<TR> for Result<T, Error> {
-    fn report_err(self, r: &mut Runner<TR>) -> Self {
+trait ErrorHandler<T> {
+    fn handle<TR: Recorder>(self, runner: &mut Runner<TR>) -> Result<T, HandledError>;
+    fn ignore(self) -> Result<T, HandledError>;
+}
+
+impl<T> ErrorHandler<T> for Result<T, Error> {
+    fn handle<TR: Recorder>(self, r: &mut Runner<TR>) -> Result<T, HandledError> {
         if let Err(e) = &self {
             r.set_status(Status::Error(e.clone()))?;
         }
-        self
+        // now error has been reported
+        self.map_err(|e| HandledError(e))
+    }
+    fn ignore(self) -> Result<T, HandledError> {
+        self.map_err(|e| HandledError(e))
     }
 }

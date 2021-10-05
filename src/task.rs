@@ -39,22 +39,24 @@ impl Task {
         // 1. prepare assets properly
         // 2. fill stage spec with default value, or die if not provided anyhow
         // 3. stage spec construction
-        runner.prepare_assets()?;
+        runner.prepare_assets().map_err(|e| e.into())?;
         let name = String::from("main");
         let empty = vec![];
         let stages = self.stages.as_ref().unwrap_or(&empty);
         for stage in stages {
             let empty_vec = vec![];
             let empty_map = HashMap::new();
-            runner.run_stage(
-                stage.name.as_ref().unwrap_or(&name),
-                StageSpec {
-                    image: stage.image.as_ref().unwrap_or(&name),
-                    extend: stage.extend.as_ref().unwrap_or(&empty_vec),
-                    script: stage.script.as_ref().unwrap_or(&empty_vec),
-                    envs: stage.envs.as_ref().unwrap_or(&empty_map),
-                },
-            )?;
+            runner
+                .run_stage(
+                    stage.name.as_ref().unwrap_or(&name),
+                    StageSpec {
+                        image: stage.image.as_ref().unwrap_or(&name),
+                        extend: stage.extend.as_ref().unwrap_or(&empty_vec),
+                        script: stage.script.as_ref().unwrap_or(&empty_vec),
+                        envs: stage.envs.as_ref().unwrap_or(&empty_map),
+                    },
+                )
+                .map_err(|e| e.into())?;
         }
         Ok(())
     }
