@@ -57,10 +57,12 @@ impl<T: Recorder> Runner<'_, T> {
     }
     pub async fn run_stage(&mut self, name: &str, stage: StageSpec) -> Result<(), HandledError> {
         self.set_status(Status::BuildStageScript(name.into()))?;
-        self.sandbox
+        let image = self
+            .sandbox
             .build(&stage.image, &stage.extend)
             .await
             .handle(self)?;
+        println!("{}", image);
         self.set_status(Status::RunStage(name.into()))?;
         self.sandbox.run().handle(self)?;
         Ok(())
