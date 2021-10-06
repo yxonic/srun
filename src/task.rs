@@ -34,27 +34,27 @@ pub struct Task {
 }
 
 impl Task {
-    pub async fn run<'docker, T: Recorder>(self, runner: &mut Runner<'docker, T>) -> Result<(), Error> {
+    pub async fn run<T: Recorder>(self, runner: &mut Runner<'_, T>) -> Result<(), Error> {
         // TODO:
         // 1. prepare assets properly
         // 2. fill stage spec with default value, or die if not provided anyhow
         // 3. stage spec construction
-        runner.prepare_assets().map_err(|e| e.into())?;
-        let name = String::from("main");
-        let stages = self.stages.unwrap_or(vec![]);
-        for stage in stages.into_iter() {
+        runner.prepare_assets().map_err(|e| e.unwrap())?;
+        let stages = self.stages.unwrap_or_default();
+        for (i, stage) in stages.into_iter().enumerate() {
+            let defaults = &self.defaults;
             runner
                 .run_stage(
-                    stage.name.as_ref().unwrap_or(&name),
+                    &stage.name.unwrap_or_else(|| format!("stage-{}", i)),
                     StageSpec {
-                        image: stage.image.unwrap_or_default(),
-                        extend: stage.extend.unwrap_or_default(),
-                        script: stage.script.unwrap_or_default(),
-                        envs: stage.envs.unwrap_or_default(),
+                        image: stage.image.or_else(|| defaults.image.clone()).ok_or(Error::UnknownError)?,
+                        extend: stage.extend.or_else(|| defaults.extend.clone()).unwrap_or_default(),
+                        script: stage.script.or_else(|| defaults.script.clone()).unwrap_or_default(),
+                        envs: stage.envs.or_else(|| defaults.envs.clone()).unwrap_or_default(),
                     },
                 )
                 .await
-                .map_err(|e| e.into())?;
+                .map_err(|e| e.unwrap())?;
         }
         Ok(())
     }

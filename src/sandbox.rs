@@ -11,7 +11,7 @@ impl<'docker> Sandbox<'docker> {
     pub fn new(docker: &Docker) -> Sandbox {
         Sandbox { docker }
     }
-    pub async fn build(&self, image: &str, extend: &Vec<String>) -> Result<(), Error> {
+    pub async fn build(&self, image: &str, extend: &[String]) -> Result<(), Error> {
         let options = BuildOptions::builder("/tmp/test").build();
         let mut stream = self.docker.images().build(&options);
         while let Some(build_result) = stream.next().await {

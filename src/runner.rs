@@ -100,8 +100,8 @@ impl Recorder for TextRecorder {
 /// recorder) by runner.
 pub struct HandledError(Error);
 
-impl Into<Error> for HandledError {
-    fn into(self) -> Error {
+impl HandledError {
+    pub fn unwrap(self) -> Error {
         self.0
     }
 }
@@ -117,9 +117,9 @@ impl<T> ErrorHandler<T> for Result<T, Error> {
             r.set_status(Status::Error(e.clone()))?;
         }
         // now error has been reported
-        self.map_err(|e| HandledError(e))
+        self.map_err(HandledError)
     }
     fn ignore(self) -> Result<T, HandledError> {
-        self.map_err(|e| HandledError(e))
+        self.map_err(HandledError)
     }
 }
