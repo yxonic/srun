@@ -1,26 +1,27 @@
 use futures::StreamExt;
-use shiplift::{Docker, BuildOptions};
+use shiplift::{BuildOptions, Docker};
 
 use crate::Error;
 
 pub struct Sandbox<'docker> {
-    docker: &'docker Docker
+    docker: &'docker Docker,
 }
 
-impl<'docker> Sandbox<'docker> {
+impl Sandbox<'_> {
     pub fn new(docker: &Docker) -> Sandbox {
         Sandbox { docker }
     }
-    pub async fn build(&self, image: &str, extend: &[String]) -> Result<(), Error> {
+    // build docker image for the use of 
+    pub async fn build(&self, _image: &str, _extend: &[String]) -> Result<String, Error> {
         let options = BuildOptions::builder("/tmp/test").build();
         let mut stream = self.docker.images().build(&options);
         while let Some(build_result) = stream.next().await {
             match build_result {
                 Ok(output) => println!("{:?}", output),
-                Err(e) => eprintln!("Error: {}", e),
+                Err(_) => return Err(Error::UnknownError),
             }
         }
-        Ok(())
+        Ok("".into())
     }
     pub fn run(&self) -> Result<(), Error> {
         Err(Error::UnknownError)

@@ -13,6 +13,7 @@ async fn main() -> Result<()> {
     {
         let mut runner = Runner::new(&docker);
         task.run(&mut runner).await?;
+        // drop to ensure runner finalize gracefully
     }
 
     Ok(())

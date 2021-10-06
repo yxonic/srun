@@ -22,7 +22,7 @@ pub struct StageSpec {
 }
 
 /// Task runner that prepares for the task, runs the task, tracks running state,
-/// and report the process. 
+/// and report the process.
 ///
 /// You should always initiate a new runner for each task.
 pub struct Runner<'docker, TRecorder: Recorder> {
@@ -32,7 +32,7 @@ pub struct Runner<'docker, TRecorder: Recorder> {
     recorder: TRecorder,
 }
 
-impl<'a> Runner<'a, TextRecorder> {
+impl Runner<'_, TextRecorder> {
     pub fn new(docker: &shiplift::Docker) -> Runner<TextRecorder> {
         Runner {
             sandbox: Sandbox::new(docker),
@@ -43,7 +43,7 @@ impl<'a> Runner<'a, TextRecorder> {
     }
 }
 
-impl<'a, T: Recorder> Runner<'a, T> {
+impl<T: Recorder> Runner<'_, T> {
     fn set_status(&mut self, status: Status) -> Result<(), HandledError> {
         self.status = status;
         // do not report error again when reporting has failed
@@ -57,14 +57,17 @@ impl<'a, T: Recorder> Runner<'a, T> {
     }
     pub async fn run_stage(&mut self, name: &str, stage: StageSpec) -> Result<(), HandledError> {
         self.set_status(Status::BuildStageScript(name.into()))?;
-        self.sandbox.build(&stage.image, &stage.extend).await.handle(self)?;
+        self.sandbox
+            .build(&stage.image, &stage.extend)
+            .await
+            .handle(self)?;
         self.set_status(Status::RunStage(name.into()))?;
         self.sandbox.run().handle(self)?;
         Ok(())
     }
 }
 
-impl<'a, T: Recorder> Drop for Runner<'a, T> {
+impl<T: Recorder> Drop for Runner<'_, T> {
     fn drop(&mut self) {
         if matches!(self.status, Status::Error(_)) {
             // runner is already dead, and the error has been reported
@@ -98,13 +101,7 @@ impl Recorder for TextRecorder {
 
 /// Represents an error that has been properly handled (reported to the
 /// recorder) by runner.
-pub struct HandledError(Error);
-
-impl HandledError {
-    pub fn unwrap(self) -> Error {
-        self.0
-    }
-}
+pub struct HandledError(pub Error);
 
 trait ErrorHandler<T> {
     fn handle<TR: Recorder>(self, runner: &mut Runner<TR>) -> Result<T, HandledError>;

@@ -8,7 +8,7 @@ use crate::{
 };
 
 /// Stage specification.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct Stage {
     #[serde(skip_serializing_if = "Option::is_none")]
     name: Option<String>,
@@ -39,22 +39,35 @@ impl Task {
         // 1. prepare assets properly
         // 2. fill stage spec with default value, or die if not provided anyhow
         // 3. stage spec construction
-        runner.prepare_assets().map_err(|e| e.unwrap())?;
-        let stages = self.stages.unwrap_or_default();
+        runner.prepare_assets().map_err(|e| e.0)?;
+
+        let stages = self.stages.unwrap_or_else(|| vec![Stage::default()]);
         for (i, stage) in stages.into_iter().enumerate() {
             let defaults = &self.defaults;
             runner
                 .run_stage(
                     &stage.name.unwrap_or_else(|| format!("stage-{}", i)),
                     StageSpec {
-                        image: stage.image.or_else(|| defaults.image.clone()).ok_or(Error::UnknownError)?,
-                        extend: stage.extend.or_else(|| defaults.extend.clone()).unwrap_or_default(),
-                        script: stage.script.or_else(|| defaults.script.clone()).unwrap_or_default(),
-                        envs: stage.envs.or_else(|| defaults.envs.clone()).unwrap_or_default(),
+                        image: stage
+                            .image
+                            .or_else(|| defaults.image.clone())
+                            .ok_or(Error::UnknownError)?,
+                        extend: stage
+                            .extend
+                            .or_else(|| defaults.extend.clone())
+                            .unwrap_or_default(),
+                        script: stage
+                            .script
+                            .or_else(|| defaults.script.clone())
+                            .unwrap_or_default(),
+                        envs: stage
+                            .envs
+                            .or_else(|| defaults.envs.clone())
+                            .unwrap_or_default(),
                     },
                 )
                 .await
-                .map_err(|e| e.unwrap())?;
+                .map_err(|e| e.0)?;
         }
         Ok(())
     }
