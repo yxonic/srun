@@ -14,7 +14,7 @@ async fn main() -> Result<()> {
 
     {
         let mut runner = Runner::new(&docker);
-        task.run(&mut runner).await?;
+        task.run(&mut runner).await.context("failed to run task")?;
         // drop to ensure runner finalize gracefully
     }
 
