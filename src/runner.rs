@@ -1,6 +1,13 @@
+//! High-level task runner and status management.
+
 use std::collections::HashMap;
 
-use crate::{asset::AssetManager, sandbox::Sandbox, Error};
+use crate::{
+    asset::AssetManager,
+    recorder::{Recorder, TextRecorder},
+    sandbox::Sandbox,
+    Error,
+};
 
 #[derive(Debug)]
 pub enum Status {
@@ -10,7 +17,7 @@ pub enum Status {
     RunStage(String),
     FinishStage(String),
     Success,
-    Error(Error),
+    Error(String),
 }
 
 #[derive(Debug)]
@@ -56,13 +63,20 @@ impl<T: Recorder> Runner<'_, T> {
         Ok(())
     }
     pub async fn run_stage(&mut self, name: &str, stage: StageSpec) -> Result<(), HandledError> {
+        log::info!("running stage: {}", name);
+
+        log::info!("build stage script for `{}`", name);
         self.set_status(Status::BuildStageScript(name.into()))?;
-        self.sandbox
+        let image = self
+            .sandbox
             .build(&stage.image, &stage.extend)
             .await
             .handle(self)?;
+
+        log::info!("run stage `{}` with image: {}", name, image);
         self.set_status(Status::RunStage(name.into()))?;
-        self.sandbox.run().handle(self)?;
+        self.sandbox.run(&stage.script, &stage.envs).handle(self)?;
+
         Ok(())
     }
 }
@@ -73,29 +87,12 @@ impl<T: Recorder> Drop for Runner<'_, T> {
             // runner is already dead, and the error has been reported
             return;
         }
+        if std::thread::panicking() {
+            // do not report when panicking
+            return;
+        }
         // indicates that all stages finished successfully
         self.recorder.emit_status(&Status::Success).unwrap();
-    }
-}
-
-pub trait Recorder {
-    fn emit_status(&self, _status: &Status) -> Result<(), Error> {
-        Ok(())
-    }
-    fn emit_stdout(&self, _line: &str) -> Result<(), Error> {
-        Ok(())
-    }
-    fn emit_stderr(&self, _line: &str) -> Result<(), Error> {
-        Ok(())
-    }
-}
-
-pub struct TextRecorder;
-
-impl Recorder for TextRecorder {
-    fn emit_status(&self, status: &Status) -> Result<(), Error> {
-        println!("status: {:?}", status);
-        Ok(())
     }
 }
 
@@ -111,7 +108,7 @@ trait ErrorHandler<T> {
 impl<T> ErrorHandler<T> for Result<T, Error> {
     fn handle<TR: Recorder>(self, r: &mut Runner<TR>) -> Result<T, HandledError> {
         if let Err(e) = &self {
-            r.set_status(Status::Error(e.clone()))?;
+            r.set_status(Status::Error(e.to_string()))?;
         }
         // now error has been reported
         self.map_err(HandledError)

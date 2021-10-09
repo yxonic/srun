@@ -1,3 +1,5 @@
+//! Managing assets needed for running task.
+
 use crate::Error;
 
 pub struct AssetManager;

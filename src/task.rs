@@ -3,7 +3,8 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    runner::{Recorder, Runner, StageSpec},
+    recorder::Recorder,
+    runner::{Runner, StageSpec},
     Error,
 };
 
@@ -34,6 +35,12 @@ pub struct Task {
 }
 
 impl Task {
+    pub fn from_yaml(s: &str) -> Result<Task, Error> {
+        let task = serde_yaml::from_str(s).map_err(|e| Error::SpecError(e.to_string()))?;
+        // TODO: validate
+        Ok(task)
+    }
+
     pub async fn run<T: Recorder>(self, runner: &mut Runner<'_, T>) -> Result<(), Error> {
         // TODO:
         // 1. prepare assets properly
@@ -43,15 +50,16 @@ impl Task {
 
         let stages = self.stages.unwrap_or_else(|| vec![Stage::default()]);
         for (i, stage) in stages.into_iter().enumerate() {
+            let name = stage.name.unwrap_or_else(|| format!("stage-{}", i));
             let defaults = &self.defaults;
             runner
                 .run_stage(
-                    &stage.name.unwrap_or_else(|| format!("stage-{}", i)),
+                    &name,
                     StageSpec {
                         image: stage
                             .image
                             .or_else(|| defaults.image.clone())
-                            .ok_or(Error::UnknownError)?,
+                            .unwrap_or_default(),
                         extend: stage
                             .extend
                             .or_else(|| defaults.extend.clone())
