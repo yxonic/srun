@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use crate::{
     asset::AssetManager,
-    recorder::{Recorder, TextRecorder},
+    reporter::{Reporter, TextReporter},
     sandbox::Sandbox,
     Error,
 };
@@ -32,29 +32,29 @@ pub struct StageSpec {
 /// and report the process.
 ///
 /// You should always initiate a new runner for each task.
-pub struct Runner<'docker, TRecorder: Recorder> {
+pub struct Runner<'docker, TReporter: Reporter> {
     assets: AssetManager,
     sandbox: Sandbox<'docker>,
     status: Status,
-    recorder: TRecorder,
+    reporter: TReporter,
 }
 
-impl Runner<'_, TextRecorder> {
-    pub fn new(docker: &shiplift::Docker) -> Runner<TextRecorder> {
+impl Runner<'_, TextReporter> {
+    pub fn new(docker: &shiplift::Docker) -> Runner<TextReporter> {
         Runner {
             sandbox: Sandbox::new(docker),
             assets: AssetManager {},
-            recorder: TextRecorder {},
+            reporter: TextReporter {},
             status: Status::Start,
         }
     }
 }
 
-impl<T: Recorder> Runner<'_, T> {
+impl<T: Reporter> Runner<'_, T> {
     fn set_status(&mut self, status: Status) -> Result<(), HandledError> {
         self.status = status;
         // do not report error again when reporting has failed
-        self.recorder.emit_status(&self.status).ignore()?;
+        self.reporter.emit_status(&self.status).ignore()?;
         Ok(())
     }
     pub fn prepare_assets(&mut self) -> Result<(), HandledError> {
@@ -81,7 +81,7 @@ impl<T: Recorder> Runner<'_, T> {
     }
 }
 
-impl<T: Recorder> Drop for Runner<'_, T> {
+impl<T: Reporter> Drop for Runner<'_, T> {
     fn drop(&mut self) {
         if matches!(self.status, Status::Error(_)) {
             // runner is already dead, and the error has been reported
@@ -92,21 +92,20 @@ impl<T: Recorder> Drop for Runner<'_, T> {
             return;
         }
         // indicates that all stages finished successfully
-        self.recorder.emit_status(&Status::Success).unwrap();
+        self.reporter.emit_status(&Status::Success).unwrap();
     }
 }
 
-/// Represents an error that has been properly handled (reported to the
-/// recorder) by runner.
+/// Represents an error that has been properly handled (reported) by runner.
 pub struct HandledError(pub Error);
 
 trait ErrorHandler<T> {
-    fn handle<TR: Recorder>(self, runner: &mut Runner<TR>) -> Result<T, HandledError>;
+    fn handle<TR: Reporter>(self, runner: &mut Runner<TR>) -> Result<T, HandledError>;
     fn ignore(self) -> Result<T, HandledError>;
 }
 
 impl<T> ErrorHandler<T> for Result<T, Error> {
-    fn handle<TR: Recorder>(self, r: &mut Runner<TR>) -> Result<T, HandledError> {
+    fn handle<TR: Reporter>(self, r: &mut Runner<TR>) -> Result<T, HandledError> {
         if let Err(e) = &self {
             r.set_status(Status::Error(e.to_string()))?;
         }

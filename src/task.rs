@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    recorder::Recorder,
+    reporter::Reporter,
     runner::{Runner, StageSpec},
     Error,
 };
@@ -41,7 +41,7 @@ impl Task {
         Ok(task)
     }
 
-    pub async fn run<T: Recorder>(self, runner: &mut Runner<'_, T>) -> Result<(), Error> {
+    pub async fn run<T: Reporter>(self, runner: &mut Runner<'_, T>) -> Result<(), Error> {
         // TODO:
         // 1. prepare assets properly
         // 2. fill stage spec with default value, or die if not provided anyhow

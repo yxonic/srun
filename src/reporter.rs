@@ -1,6 +1,6 @@
 use crate::{runner::Status, Error};
 
-pub trait Recorder {
+pub trait Reporter {
     fn emit_status(&self, _status: &Status) -> Result<(), Error> {
         Ok(())
     }
@@ -12,9 +12,9 @@ pub trait Recorder {
     }
 }
 
-pub struct TextRecorder;
+pub struct TextReporter;
 
-impl Recorder for TextRecorder {
+impl Reporter for TextReporter {
     fn emit_status(&self, status: &Status) -> Result<(), Error> {
         log::info!("status: {:?}", status);
         Ok(())
