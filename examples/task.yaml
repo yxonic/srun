@@ -1,4 +1,6 @@
 name: main
 image: python:3
+extend:
+  - python --version
 script:
   - python -c "print('hello')"

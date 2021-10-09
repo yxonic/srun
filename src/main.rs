@@ -5,8 +5,10 @@ use srun::{Runner, Task};
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    env_logger::init();
+
     let task_str = fs::read_to_string("examples/task.yaml").context("task script not found")?;
-    let task: Task = serde_yaml::from_str(&task_str)?;
+    let task = Task::from_yaml(&task_str)?;
 
     let docker = shiplift::Docker::new();
 

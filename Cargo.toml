@@ -2,10 +2,7 @@
 name = "srun"
 version = "0.1.0"
 edition = "2018"
-
-[lib]
-name = "srun"
-path = "src/lib.rs" 
+authors = ["Yu Yin <yxonic@gmail.com>"]
 
 [[bin]]
 name = "srun"
@@ -18,10 +15,12 @@ cached-path = "0.5"
 clap = { version = "2", optional = true }
 env_logger = { version = "0.9", optional = true }
 futures = "0.3"
+hyper = "0.14"
 log = "0.4"
 serde = { version = "1", features = ["derive"] }
 serde_yaml = { version = "0.8", optional = true }
 shiplift = "0.7"
+tempfile = "3"
 thiserror = "1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"], optional = true }
 

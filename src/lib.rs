@@ -5,6 +5,7 @@
 
 pub mod asset;
 mod error;
+pub mod recorder;
 pub mod runner;
 pub mod sandbox;
 mod task;
