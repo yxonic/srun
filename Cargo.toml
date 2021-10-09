@@ -1,8 +1,10 @@
 [package]
 name = "srun"
-version = "0.1.0"
-edition = "2018"
+version = "0.0.1"
 authors = ["Yu Yin <yxonic@gmail.com>"]
+description = "Subsystem for building a community on top of existing business"
+license = "MIT"
+edition = "2018"
 
 [[bin]]
 name = "srun"
