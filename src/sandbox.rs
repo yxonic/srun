@@ -158,6 +158,11 @@ impl Sandbox<'_> {
 
         log::info!("container exited with code {}", e.status_code);
         if e.status_code > 0 {
+            // report exit code if failed
+            reporter.report_stderr(
+                &format!("[program exited with code {}]", e.status_code),
+                chrono::Utc::now(),
+            )?;
             return Err(Error::ErrorCode(e.status_code));
         }
 
@@ -182,7 +187,7 @@ impl Sandbox<'_> {
         while let Some(exec_result) = stream.next().await {
             limit -= 1;
             if limit < 0 {
-                break
+                break;
             }
             let chunk = exec_result.map_err(Error::DockerError)?;
             match chunk {
