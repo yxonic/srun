@@ -75,8 +75,19 @@ impl<T: Reporter> Runner<'_, T> {
 
         log::info!("run stage `{}` with image: {}", name, image);
         self.set_status(Status::RunStage(name.into()))?;
-        self.sandbox.run(&stage.script, &stage.envs).handle(self)?;
 
+        let dir = tempfile::tempdir().map_err(Error::IOError).handle(self)?;
+
+        self.sandbox
+            .run(
+                &image,
+                &stage.script,
+                &stage.envs,
+                dir.path(),
+                &self.reporter,
+            )
+            .await
+            .handle(self)?;
         Ok(())
     }
 }
@@ -107,7 +118,7 @@ trait ErrorHandler<T> {
 impl<T> ErrorHandler<T> for Result<T, Error> {
     fn handle<TR: Reporter>(self, r: &mut Runner<TR>) -> Result<T, HandledError> {
         if let Err(e) = &self {
-            r.set_status(Status::Error(e.to_string()))?;
+            r.set_status(Status::Error(format!("{:?}", e)))?;
         }
         // now error has been reported
         self.map_err(HandledError)
