@@ -52,6 +52,7 @@ impl Runner<'_, TextReporter> {
 
 impl<T: Reporter> Runner<'_, T> {
     fn set_status(&mut self, status: Status) -> Result<(), HandledError> {
+        log::info!("changing status: {:?} -> {:?}", self.status, status);
         self.status = status;
         // do not report error again when reporting has failed
         self.reporter.emit_status(&self.status).ignore()?;
@@ -103,11 +104,12 @@ impl<T: Reporter> Drop for Runner<'_, T> {
             return;
         }
         // indicates that all stages finished successfully
-        self.reporter.emit_status(&Status::Success).unwrap();
+        self.set_status(Status::Success).unwrap();
     }
 }
 
 /// Represents an error that has been properly handled (reported) by runner.
+#[derive(Debug)]
 pub struct HandledError(pub Error);
 
 trait ErrorHandler<T> {

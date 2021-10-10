@@ -32,8 +32,6 @@ impl Reporter for TextReporter {
     fn report_status(&self, status: &Status, _: DateTime<Utc>) -> Result<(), Error> {
         if let Status::Error(e) = status {
             log::warn!("error: {:?}", e);
-        } else {
-            log::info!("status: {:?}", status);
         }
         Ok(())
     }

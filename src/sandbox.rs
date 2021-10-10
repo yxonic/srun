@@ -139,20 +139,15 @@ impl Sandbox<'_> {
         log::info!("created container with id: {}", container.id);
 
         let container = self.docker.containers().get(&container.id);
+        container.start().await.map_err(Error::DockerError)?;
 
-        log::debug!("starting container");
-        self.docker
-            .containers()
-            .get(container.id())
-            .start()
-            .await
-            .map_err(Error::DockerError)?;
-
-        let log_op = self.process_logs(&container, reporter);
-        let wait_op = container.wait();
+        log::info!("container started");
 
         log::debug!("processing logs and wait for container to finish");
+        let log_op = self.process_logs(&container, reporter);
+        let wait_op = container.wait();
         let (log, exit) = join(log_op, wait_op).await;
+
         let _ = log?;
         let e = exit.map_err(Error::DockerError)?;
 
@@ -192,10 +187,14 @@ impl Sandbox<'_> {
             let chunk = exec_result.map_err(Error::DockerError)?;
             match chunk {
                 TtyChunk::StdOut(bytes) => {
-                    reporter.emit_stdout(from_utf8(&bytes).map_err(Error::EncodingError)?)?
+                    let line = from_utf8(&bytes).map_err(Error::EncodingError)?;
+                    log::debug!("stdout | {}", line.trim_end());
+                    reporter.emit_stdout(line)?
                 }
                 TtyChunk::StdErr(bytes) => {
-                    reporter.emit_stderr(from_utf8(&bytes).map_err(Error::EncodingError)?)?
+                    let line = from_utf8(&bytes).map_err(Error::EncodingError)?;
+                    log::debug!("stderr | {}", line.trim_end());
+                    reporter.emit_stderr(line)?
                 }
                 _ => unreachable!(),
             };
