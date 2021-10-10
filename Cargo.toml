@@ -1,8 +1,8 @@
 [package]
 name = "srun"
-version = "0.0.2"
+version = "0.0.2-1"
 authors = ["Yu Yin <yxonic@gmail.com>"]
-description = "Subsystem for building a community on top of existing business"
+description = "Library and a command-line tool for running specific tasks in a sandbox environment"
 license = "MIT"
 edition = "2018"
 
