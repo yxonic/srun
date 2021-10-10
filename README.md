@@ -1,3 +1,5 @@
+![Maintenance](https://img.shields.io/badge/maintenance-experimental-blue.svg)
+
 # srun
 
 `srun` is a library and a command-line tool for running specific tasks in a

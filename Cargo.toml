@@ -3,6 +3,7 @@ name = "srun"
 version = "0.0.2-1"
 authors = ["Yu Yin <yxonic@gmail.com>"]
 description = "Library and a command-line tool for running specific tasks in a sandbox environment"
+documentation = "https://docs.rs/srun"
 license = "MIT"
 edition = "2018"
 
@@ -30,3 +31,6 @@ tokio = { version = "1", features = ["macros", "rt-multi-thread"], optional = tr
 [features]
 default = ["cli"]
 cli = ["anyhow", "clap", "env_logger", "serde_yaml", "tokio"]
+
+[badges]
+maintenance = { status = "experimental" }
