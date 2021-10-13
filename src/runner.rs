@@ -113,12 +113,12 @@ impl<T: Reporter> Drop for Runner<'_, T> {
 pub struct HandledError(pub Error);
 
 trait ErrorHandler<T> {
-    fn handle<TR: Reporter>(self, runner: &mut Runner<TR>) -> Result<T, HandledError>;
+    fn handle(self, runner: &mut Runner<impl Reporter>) -> Result<T, HandledError>;
     fn ignore(self) -> Result<T, HandledError>;
 }
 
 impl<T> ErrorHandler<T> for Result<T, Error> {
-    fn handle<TR: Reporter>(self, r: &mut Runner<TR>) -> Result<T, HandledError> {
+    fn handle(self, r: &mut Runner<impl Reporter>) -> Result<T, HandledError> {
         if let Err(e) = &self {
             r.set_status(Status::Error(format!("{:?}", e)))?;
         }

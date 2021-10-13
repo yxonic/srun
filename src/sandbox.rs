@@ -83,13 +83,13 @@ impl Sandbox<'_> {
     }
 
     /// Run scripts with envs.
-    pub async fn run<T: Reporter>(
+    pub async fn run(
         &self,
         image: &str,
         script: &[String],
         envs: &HashMap<String, String>,
         dir_path: &Path,
-        reporter: &T,
+        reporter: &impl Reporter,
     ) -> Result<(), Error> {
         log::info!("create container using {} with envs {:?}", image, envs);
 
@@ -164,10 +164,10 @@ impl Sandbox<'_> {
         Ok(())
     }
 
-    async fn process_logs<T: Reporter>(
+    async fn process_logs(
         &self,
         container: &Container<'_>,
-        reporter: &T,
+        reporter: &impl Reporter,
     ) -> Result<(), Error> {
         let mut stream = container.logs(
             &LogsOptions::builder()
