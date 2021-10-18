@@ -20,6 +20,7 @@ pub enum Status {
     Error(String),
 }
 
+/// Defines a stage to be run by runner.
 #[derive(Debug)]
 pub struct StageSpec {
     pub(crate) image: String,
