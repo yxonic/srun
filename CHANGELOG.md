@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 3 commits contributed to the release.
+ - 4 commits contributed to the release.
  - 1 commit where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release srun v0.0.4 ([`b326665`](https://github.com/git//yxonic/srun.git/commit/b3266654f35fc1ea2cd05bae8e823965e8b21b28))
     - Release srun v0.0.4 ([`f1e9de8`](https://github.com/git//yxonic/srun.git/commit/f1e9de8e9235e8d661a85af9b8f4721be4ce2e46))
     - Release srun v0.0.4 ([`4e5f3d5`](https://github.com/git//yxonic/srun.git/commit/4e5f3d5e5bba99a0026a38aa747c4a235e878bf3))
     - StageSpec ([`69c0c01`](https://github.com/git//yxonic/srun.git/commit/69c0c01a426b46556739b5634662eaad778d7c5a))
