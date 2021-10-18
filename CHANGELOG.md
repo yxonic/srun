@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.0.4 (2021-10-18)
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 1 commit contributed to the release.
+ - 1 commit where understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' where seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - StageSpec ([`69c0c01`](https://github.com/git//yxonic/srun.git/commit/69c0c01a426b46556739b5634662eaad778d7c5a))
+</details>
+
 ## v0.0.3 (2021-10-18)
 
 ### New Features
@@ -26,7 +46,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 21 commits contributed to the release over the course of 12 calendar days.
+ - 22 commits contributed to the release over the course of 12 calendar days.
  - 17 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -37,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release srun v0.0.3 ([`c62ef1e`](https://github.com/git//yxonic/srun.git/commit/c62ef1e9d17e25e5e0b4409d31b30a79ccc73bb0))
     - smart-release ([`754a051`](https://github.com/git//yxonic/srun.git/commit/754a051b88c05761ce6bd00b3c8b2d8eccbef5f8))
     - clear generic function api with impl ([`9773ec1`](https://github.com/git//yxonic/srun.git/commit/9773ec10496192e92bc607fa838863b4729552a0))
     - cargo metadata ([`9b547c3`](https://github.com/git//yxonic/srun.git/commit/9b547c3c645f10bc8f987daaf7551de96300e5c2))

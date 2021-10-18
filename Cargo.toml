@@ -1,6 +1,6 @@
 [package]
 name = "srun"
-version = "0.0.3"
+version = "0.0.4"
 authors = ["Yu Yin <yxonic@gmail.com>"]
 description = "Library and a command-line tool for running specific tasks in a sandbox environment"
 documentation = "https://docs.rs/srun"
