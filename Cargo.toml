@@ -1,6 +1,6 @@
 [package]
 name = "srun"
-version = "0.0.2-1"
+version = "0.0.3"
 authors = ["Yu Yin <yxonic@gmail.com>"]
 description = "Library and a command-line tool for running specific tasks in a sandbox environment"
 documentation = "https://docs.rs/srun"
@@ -16,7 +16,7 @@ required-features = ["cli"]
 anyhow = { version = "1", optional = true }
 cached-path = "0.5"
 chrono = "0.4"
-clap = { version = "3.0.0-beta.4", optional = true }
+clap = { version = "3.0.0-beta.5", optional = true }
 env_logger = { version = "0.9", optional = true }
 futures = "0.3"
 hyper = "0.14"
