@@ -3,9 +3,9 @@ image: python:3
 script:
   - pwd
   - ls
-  - echo hello > file
+  - cat /assets/srun/README.md
 workdir: /data
 assets:
-  path/to/file: data:,text
+  srun/README.md: https://raw.githubusercontent.com/yxonic/srun/main/README.md
 mounts:
   /data: ./examples/

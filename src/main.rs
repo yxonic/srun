@@ -28,7 +28,7 @@ async fn main() -> Result<()> {
     let docker = shiplift::Docker::new();
 
     {
-        let mut runner = Runner::new(&docker);
+        let mut runner = Runner::new(&docker)?;
         let r = task.run(&mut runner).await;
         if let Err(srun::Error::ErrorCode(code)) = r {
             std::process::exit(code.try_into().unwrap());

@@ -2,6 +2,8 @@
 
 use std::collections::HashMap;
 
+use chrono::{DateTime, Utc};
+
 use crate::{
     asset::AssetManager,
     reporter::{Reporter, TextReporter},
@@ -35,7 +37,7 @@ pub struct StageSpec {
 /// and report the process.
 ///
 /// You should always initiate a new runner for each task.
-pub struct Runner<'docker, TReporter: Reporter> {
+pub struct Runner<'docker, TReporter: RunnerReporter> {
     assets: AssetManager,
     sandbox: Sandbox<'docker>,
     status: Status,
@@ -43,17 +45,17 @@ pub struct Runner<'docker, TReporter: Reporter> {
 }
 
 impl Runner<'_, TextReporter> {
-    pub fn new(docker: &shiplift::Docker) -> Runner<TextReporter> {
-        Runner {
+    pub fn new(docker: &shiplift::Docker) -> Result<Runner<TextReporter>, Error> {
+        Ok(Runner {
             sandbox: Sandbox::new(docker),
-            assets: AssetManager {},
+            assets: AssetManager::new()?,
             reporter: TextReporter {},
             status: Status::Start,
-        }
+        })
     }
 }
 
-impl<T: Reporter> Runner<'_, T> {
+impl<T: RunnerReporter> Runner<'_, T> {
     fn set_status(&mut self, status: Status) -> Result<(), HandledError> {
         log::info!("changing status: {:?} -> {:?}", self.status, status);
         self.status = status;
@@ -61,9 +63,12 @@ impl<T: Reporter> Runner<'_, T> {
         self.reporter.emit_status(&self.status).ignore()?;
         Ok(())
     }
-    pub fn prepare_assets(&mut self) -> Result<(), HandledError> {
+    pub async fn prepare_assets(
+        &mut self,
+        assets: HashMap<String, String>,
+    ) -> Result<(), HandledError> {
         self.set_status(Status::PrepareAssets)?;
-        self.assets.prepare().handle(self)?;
+        self.assets.prepare(assets).await.handle(self)?;
         Ok(())
     }
     pub async fn run_stage(&mut self, name: &str, stage: StageSpec) -> Result<(), HandledError> {
@@ -87,6 +92,7 @@ impl<T: Reporter> Runner<'_, T> {
                 &stage.script,
                 &stage.envs,
                 &stage.mounts,
+                &self.assets.path(),
                 &self.reporter,
             )
             .await
@@ -95,7 +101,7 @@ impl<T: Reporter> Runner<'_, T> {
     }
 }
 
-impl<T: Reporter> Drop for Runner<'_, T> {
+impl<T: RunnerReporter> Drop for Runner<'_, T> {
     fn drop(&mut self) {
         if matches!(self.status, Status::Error(_)) {
             // runner is already dead, and the error has been reported
@@ -115,7 +121,7 @@ impl<T: Reporter> Drop for Runner<'_, T> {
 pub struct HandledError(pub Error);
 
 trait ErrorHandler<T> {
-    fn handle(self, runner: &mut Runner<impl Reporter>) -> Result<T, HandledError>;
+    fn handle(self, runner: &mut Runner<impl RunnerReporter>) -> Result<T, HandledError>;
     fn ignore(self) -> Result<T, HandledError>;
 }
 
@@ -123,7 +129,7 @@ impl<T, E> ErrorHandler<T> for Result<T, E>
 where
     E: Into<Error> + std::fmt::Debug,
 {
-    fn handle(self, r: &mut Runner<impl Reporter>) -> Result<T, HandledError> {
+    fn handle(self, r: &mut Runner<impl RunnerReporter>) -> Result<T, HandledError> {
         match self {
             Err(e) => {
                 r.set_status(Status::Error(format!("{:?}", e)))?;
@@ -140,5 +146,22 @@ where
 impl From<HandledError> for Error {
     fn from(e: HandledError) -> Self {
         e.0
+    }
+}
+
+/// Report status
+pub trait RunnerReporter: Reporter {
+    fn emit_status(&self, status: &Status) -> Result<(), Error> {
+        self.report_status(status, Utc::now())
+    }
+    fn report_status(&self, status: &Status, timestamp: DateTime<Utc>) -> Result<(), Error>;
+}
+
+impl RunnerReporter for TextReporter {
+    fn report_status(&self, status: &Status, _: DateTime<Utc>) -> Result<(), Error> {
+        if let Status::Error(e) = status {
+            log::warn!("error: {:?}", e);
+        }
+        Ok(())
     }
 }

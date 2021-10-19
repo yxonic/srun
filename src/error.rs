@@ -12,6 +12,9 @@ pub enum Error {
     #[error("Error while accessing filesystem: {0:?}.")]
     IOError(std::io::Error),
 
+    #[error("Error in cache system: {0:?}.")]
+    CacheError(cached_path::Error),
+
     #[error("Script exited with code {0}.")]
     ErrorCode(u64),
 
@@ -32,6 +35,12 @@ pub enum Error {
 impl From<std::io::Error> for Error {
     fn from(e: std::io::Error) -> Self {
         Error::IOError(e)
+    }
+}
+
+impl From<cached_path::Error> for Error {
+    fn from(e: cached_path::Error) -> Self {
+        Error::CacheError(e)
     }
 }
 

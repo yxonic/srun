@@ -3,8 +3,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    reporter::Reporter,
-    runner::{Runner, StageSpec},
+    runner::{Runner, RunnerReporter, StageSpec},
     Error,
 };
 
@@ -45,9 +44,11 @@ impl Task {
         Ok(task)
     }
 
-    pub async fn run(self, runner: &mut Runner<'_, impl Reporter>) -> Result<(), Error> {
+    pub async fn run(self, runner: &mut Runner<'_, impl RunnerReporter>) -> Result<(), Error> {
         // TODO: prepare assets properly
-        runner.prepare_assets()?;
+        runner
+            .prepare_assets(self.assets.unwrap_or_default())
+            .await?;
 
         let mounts = self.mounts.unwrap_or_default();
         let stages = self.stages.unwrap_or_else(|| vec![Stage::default()]);

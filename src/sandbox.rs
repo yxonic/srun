@@ -89,22 +89,18 @@ impl Sandbox<'_> {
         script: &[String],
         envs: &HashMap<String, String>,
         mounts: &HashMap<String, String>,
+        asset_path: &Path,
         reporter: &impl Reporter,
     ) -> Result<(), Error> {
         log::info!("create container using {} with envs {:?}", image, envs);
 
-        let temp = tempfile::tempdir()?;
-        let asset_path = temp.path();
-
-        {
-            let file_path = asset_path.join(".run.sh");
-            log::debug!("writing stage script at: {:?}", file_path);
-            let mut file = File::create(file_path)?;
-            for line in script {
-                writeln!(file, "{}", line)?;
-            }
-            file.flush()?;
+        let file_path = asset_path.join(".run.sh");
+        log::debug!("writing stage script at: {:?}", file_path);
+        let mut file = File::create(file_path)?;
+        for line in script {
+            writeln!(file, "{}", line)?;
         }
+        file.flush()?;
 
         let mut binds: Vec<String> = vec![];
         binds.push(format!(

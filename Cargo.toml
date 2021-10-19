@@ -17,6 +17,7 @@ anyhow = { version = "1", optional = true }
 cached-path = "0.5"
 chrono = "0.4"
 clap = { version = "3.0.0-beta.5", optional = true }
+data-url = "0.1"
 env_logger = { version = "0.9", optional = true }
 futures = "0.3"
 hyper = "0.14"
