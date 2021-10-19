@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.0.6 (2021-10-19)
+
+### New Features
+
+ - <csr-id-ca02d21d9ae4d0e15f52ab9c1764715b5c51002d/> add asset manager
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 1 commit contributed to the release.
+ - 1 commit where understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' where seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - add asset manager ([`ca02d21`](https://github.com/git//yxonic/srun.git/commit/ca02d21d9ae4d0e15f52ab9c1764715b5c51002d))
+</details>
+
 ## v0.0.5 (2021-10-19)
 
 ### New Features
@@ -16,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 3 commits contributed to the release.
+ - 4 commits contributed to the release.
  - 3 commits where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -27,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release srun v0.0.5 ([`fadf904`](https://github.com/git//yxonic/srun.git/commit/fadf9046db75cc8803ff3db4f87c6381e3d21b2f))
     - you may now bind local directories ([`51140f3`](https://github.com/git//yxonic/srun.git/commit/51140f3bce3ac47048e9faab5af88441b5077048))
     - add workdir option ([`2ca5bb9`](https://github.com/git//yxonic/srun.git/commit/2ca5bb973a976c0e841a6dfea7cd508b4d295fc4))
     - simplify error handling ([`208f08d`](https://github.com/git//yxonic/srun.git/commit/208f08da7e258122937b184d1ad77040646a42b7))
