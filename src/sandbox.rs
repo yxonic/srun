@@ -88,13 +88,16 @@ impl Sandbox<'_> {
         workdir: &str,
         script: &[String],
         envs: &HashMap<String, String>,
-        dir_path: &Path,
+        mounts: &HashMap<String, String>,
         reporter: &impl Reporter,
     ) -> Result<(), Error> {
         log::info!("create container using {} with envs {:?}", image, envs);
 
+        let temp = tempfile::tempdir()?;
+        let asset_path = temp.path();
+
         {
-            let file_path = dir_path.join(".run.sh");
+            let file_path = asset_path.join(".run.sh");
             log::debug!("writing stage script at: {:?}", file_path);
             let mut file = File::create(file_path)?;
             for line in script {
@@ -103,21 +106,36 @@ impl Sandbox<'_> {
             file.flush()?;
         }
 
+        let mut binds: Vec<String> = vec![];
+        binds.push(format!(
+            "{}:/assets",
+            asset_path
+                .to_str()
+                .expect("path should always be valid utf-8 string")
+        ));
+        for (k, v) in mounts {
+            // TODO: check for permission
+            binds.push(format!(
+                "{}:{}:ro",
+                Path::new(v)
+                    .canonicalize()?
+                    .to_str()
+                    .expect("path should always be valid utf-8 string"),
+                k,
+            ));
+        }
+
         let options = ContainerOptions::builder(image)
-            .volumes(vec![&format!(
-                "{}:{}",
-                dir_path.to_str().expect("path should always be valid"),
-                workdir,
-            )])
+            .volumes(binds.iter().map(|s| s as &str).collect())
             .working_dir(workdir)
-            .cmd(vec!["sh", "-e", ".run.sh"])
+            .cmd(vec!["sh", "-e", "/assets/.run.sh"])
             .env(
                 // TODO: probably better solution needed
                 envs.iter()
                     .map(|(k, v)| format!("{}={}", k, v))
                     .collect::<Vec<String>>()
                     .iter()
-                    .map(AsRef::as_ref)
+                    .map(|s| s as &str)
                     .collect::<Vec<&str>>(),
             )
             .attach_stdout(true)

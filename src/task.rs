@@ -32,6 +32,8 @@ pub struct Task {
     stages: Option<Vec<Stage>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     assets: Option<HashMap<String, String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    mounts: Option<HashMap<String, String>>,
     #[serde(flatten)]
     defaults: Stage,
 }
@@ -44,12 +46,10 @@ impl Task {
     }
 
     pub async fn run(self, runner: &mut Runner<'_, impl Reporter>) -> Result<(), Error> {
-        // TODO:
-        // 1. prepare assets properly
-        // 2. fill stage spec with default value, or die if not provided anyhow
-        // 3. stage spec construction
+        // TODO: prepare assets properly
         runner.prepare_assets()?;
 
+        let mounts = self.mounts.unwrap_or_default();
         let stages = self.stages.unwrap_or_else(|| vec![Stage::default()]);
         for (i, stage) in stages.into_iter().enumerate() {
             let name = stage.name.unwrap_or_else(|| format!("stage-{}", i));
@@ -78,6 +78,7 @@ impl Task {
                             .envs
                             .or_else(|| defaults.envs.clone())
                             .unwrap_or_default(),
+                        mounts: mounts.to_owned(),
                     },
                 )
                 .await?;

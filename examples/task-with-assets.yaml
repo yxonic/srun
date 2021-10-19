@@ -2,9 +2,10 @@ name: main
 image: python:3  
 script:
   - pwd
-  - cat README.md
+  - ls
+  - echo hello > file
 workdir: /data
 assets:
   path/to/file: data:,text
 mounts:
-  /data: ./
+  /data: ./examples/

@@ -28,6 +28,7 @@ pub struct StageSpec {
     pub(crate) workdir: String,
     pub(crate) script: Vec<String>,
     pub(crate) envs: HashMap<String, String>,
+    pub(crate) mounts: HashMap<String, String>,
 }
 
 /// Task runner that prepares for the task, runs the task, tracks running state,
@@ -79,15 +80,13 @@ impl<T: Reporter> Runner<'_, T> {
         log::info!("run stage `{}` with image: {}", name, image);
         self.set_status(Status::RunStage(name.into()))?;
 
-        let dir = tempfile::tempdir().handle(self)?;
-
         self.sandbox
             .run(
                 &image,
                 &stage.workdir,
                 &stage.script,
                 &stage.envs,
-                dir.path(),
+                &stage.mounts,
                 &self.reporter,
             )
             .await
