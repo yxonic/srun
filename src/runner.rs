@@ -78,7 +78,7 @@ impl<T: Reporter> Runner<'_, T> {
         log::info!("run stage `{}` with image: {}", name, image);
         self.set_status(Status::RunStage(name.into()))?;
 
-        let dir = tempfile::tempdir().map_err(Error::IOError).handle(self)?;
+        let dir = tempfile::tempdir().handle(self)?;
 
         self.sandbox
             .run(
@@ -118,15 +118,26 @@ trait ErrorHandler<T> {
     fn ignore(self) -> Result<T, HandledError>;
 }
 
-impl<T> ErrorHandler<T> for Result<T, Error> {
+impl<T, E> ErrorHandler<T> for Result<T, E>
+where
+    E: Into<Error> + std::fmt::Debug,
+{
     fn handle(self, r: &mut Runner<impl Reporter>) -> Result<T, HandledError> {
-        if let Err(e) = &self {
-            r.set_status(Status::Error(format!("{:?}", e)))?;
+        match self {
+            Err(e) => {
+                r.set_status(Status::Error(format!("{:?}", e)))?;
+                Err(HandledError(e.into()))
+            }
+            Ok(r) => Ok(r),
         }
-        // now error has been reported
-        self.map_err(HandledError)
     }
     fn ignore(self) -> Result<T, HandledError> {
-        self.map_err(HandledError)
+        self.map_err(|e| HandledError(e.into()))
+    }
+}
+
+impl From<HandledError> for Error {
+    fn from(e: HandledError) -> Self {
+        e.0
     }
 }

@@ -26,17 +26,16 @@ impl Sandbox<'_> {
 
     /// Build docker image and return image ID.
     pub async fn build(&self, image: &str, extend: &[String]) -> Result<String, Error> {
-        let dir = tempfile::tempdir().map_err(Error::IOError)?;
+        let dir = tempfile::tempdir()?;
         let dir_path = dir.path().to_str().expect("tempdir should always be valid");
 
         {
             let file_path = dir.path().join("Dockerfile");
             log::debug!("writing Dockerfile at: {:?}", file_path);
-            let mut file = File::create(file_path).map_err(Error::IOError)?;
-            writeln!(file, "FROM {}", image).map_err(Error::IOError)?;
+            let mut file = File::create(file_path)?;
+            writeln!(file, "FROM {}", image)?;
             if !extend.is_empty() {
-                writeln!(file, "RUN {}", extend.join(" && ").replace('\n', ""))
-                    .map_err(Error::IOError)?;
+                writeln!(file, "RUN {}", extend.join(" && ").replace('\n', ""))?;
             }
         }
 
@@ -96,11 +95,11 @@ impl Sandbox<'_> {
         {
             let file_path = dir_path.join(".run.sh");
             log::debug!("writing stage script at: {:?}", file_path);
-            let mut file = File::create(file_path).map_err(Error::IOError)?;
+            let mut file = File::create(file_path)?;
             for line in script {
-                writeln!(file, "{}", line).map_err(Error::IOError)?;
+                writeln!(file, "{}", line)?;
             }
-            file.flush().map_err(Error::IOError)?;
+            file.flush()?;
         }
 
         let options = ContainerOptions::builder(image)
@@ -129,17 +128,12 @@ impl Sandbox<'_> {
             .auto_remove(true)
             .build();
 
-        let container = self
-            .docker
-            .containers()
-            .create(&options)
-            .await
-            .map_err(Error::DockerError)?;
+        let container = self.docker.containers().create(&options).await?;
 
         log::info!("created container with id: {}", container.id);
 
         let container = self.docker.containers().get(&container.id);
-        container.start().await.map_err(Error::DockerError)?;
+        container.start().await?;
 
         log::info!("container started");
 
@@ -149,7 +143,7 @@ impl Sandbox<'_> {
         let (log, exit) = join(log_op, wait_op).await;
 
         let _ = log?;
-        let e = exit.map_err(Error::DockerError)?;
+        let e = exit?;
 
         log::info!("container exited with code {}", e.status_code);
         if e.status_code > 0 {
@@ -184,15 +178,15 @@ impl Sandbox<'_> {
             if limit < 0 {
                 break;
             }
-            let chunk = exec_result.map_err(Error::DockerError)?;
+            let chunk = exec_result?;
             match chunk {
                 TtyChunk::StdOut(bytes) => {
-                    let line = from_utf8(&bytes).map_err(Error::EncodingError)?;
+                    let line = from_utf8(&bytes)?;
                     log::debug!("stdout | {}", line.trim_end());
                     reporter.emit_stdout(line)?
                 }
                 TtyChunk::StdErr(bytes) => {
-                    let line = from_utf8(&bytes).map_err(Error::EncodingError)?;
+                    let line = from_utf8(&bytes)?;
                     log::debug!("stderr | {}", line.trim_end());
                     reporter.emit_stderr(line)?
                 }

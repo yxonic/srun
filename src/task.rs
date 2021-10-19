@@ -46,7 +46,7 @@ impl Task {
         // 1. prepare assets properly
         // 2. fill stage spec with default value, or die if not provided anyhow
         // 3. stage spec construction
-        runner.prepare_assets().map_err(|e| e.0)?;
+        runner.prepare_assets()?;
 
         let stages = self.stages.unwrap_or_else(|| vec![Stage::default()]);
         for (i, stage) in stages.into_iter().enumerate() {
@@ -74,8 +74,7 @@ impl Task {
                             .unwrap_or_default(),
                     },
                 )
-                .await
-                .map_err(|e| e.0)?;
+                .await?;
         }
         Ok(())
     }

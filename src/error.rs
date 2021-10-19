@@ -1,5 +1,3 @@
-use std::str::Utf8Error;
-
 use thiserror::Error;
 
 /// All possible errors.
@@ -24,9 +22,33 @@ pub enum Error {
     DockerError(shiplift::Error),
 
     #[error("Decoding error with docker logs: {0:?}.")]
-    EncodingError(Utf8Error),
+    EncodingError(std::str::Utf8Error),
 
     /// Unknown error occurred.
     #[error("Unknown error: {0}.")]
     UnknownError(String),
+}
+
+impl From<std::io::Error> for Error {
+    fn from(e: std::io::Error) -> Self {
+        Error::IOError(e)
+    }
+}
+
+impl From<hyper::Error> for Error {
+    fn from(e: hyper::Error) -> Self {
+        Error::ConnectionError(e)
+    }
+}
+
+impl From<shiplift::Error> for Error {
+    fn from(e: shiplift::Error) -> Self {
+        Error::DockerError(e)
+    }
+}
+
+impl From<std::str::Utf8Error> for Error {
+    fn from(e: std::str::Utf8Error) -> Self {
+        Error::EncodingError(e)
+    }
 }
