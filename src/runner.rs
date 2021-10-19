@@ -25,6 +25,7 @@ pub enum Status {
 pub struct StageSpec {
     pub(crate) image: String,
     pub(crate) extend: Vec<String>,
+    pub(crate) workdir: String,
     pub(crate) script: Vec<String>,
     pub(crate) envs: HashMap<String, String>,
 }
@@ -83,6 +84,7 @@ impl<T: Reporter> Runner<'_, T> {
         self.sandbox
             .run(
                 &image,
+                &stage.workdir,
                 &stage.script,
                 &stage.envs,
                 dir.path(),

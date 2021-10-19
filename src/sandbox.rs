@@ -85,6 +85,7 @@ impl Sandbox<'_> {
     pub async fn run(
         &self,
         image: &str,
+        workdir: &str,
         script: &[String],
         envs: &HashMap<String, String>,
         dir_path: &Path,
@@ -104,10 +105,11 @@ impl Sandbox<'_> {
 
         let options = ContainerOptions::builder(image)
             .volumes(vec![&format!(
-                "{}:/app",
-                dir_path.to_str().expect("path should always be valid")
+                "{}:{}",
+                dir_path.to_str().expect("path should always be valid"),
+                workdir,
             )])
-            .working_dir("/app")
+            .working_dir(workdir)
             .cmd(vec!["sh", "-e", ".run.sh"])
             .env(
                 // TODO: probably better solution needed

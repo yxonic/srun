@@ -1,0 +1,10 @@
+name: main
+image: python:3  
+script:
+  - pwd
+  - cat README.md
+workdir: /data
+assets:
+  path/to/file: data:,text
+mounts:
+  /data: ./

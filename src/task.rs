@@ -18,6 +18,8 @@ pub struct Stage {
     #[serde(skip_serializing_if = "Option::is_none")]
     extend: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    workdir: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     script: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     envs: Option<HashMap<String, String>>,
@@ -64,6 +66,10 @@ impl Task {
                             .extend
                             .or_else(|| defaults.extend.clone())
                             .unwrap_or_default(),
+                        workdir: stage
+                            .workdir
+                            .or_else(|| defaults.workdir.clone())
+                            .unwrap_or_else(|| String::from("/workspace")),
                         script: stage
                             .script
                             .or_else(|| defaults.script.clone())

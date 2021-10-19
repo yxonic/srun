@@ -1,3 +1,4 @@
+use std::convert::TryInto;
 use std::fs;
 
 use anyhow::{Context, Result};
@@ -28,7 +29,11 @@ async fn main() -> Result<()> {
 
     {
         let mut runner = Runner::new(&docker);
-        task.run(&mut runner).await.context("failed to run task")?;
+        let r = task.run(&mut runner).await;
+        if let Err(srun::Error::ErrorCode(code)) = r {
+            std::process::exit(code.try_into().unwrap());
+        }
+        r.context("failed to run task")?;
         // drop to ensure runner finalize gracefully
     }
 
