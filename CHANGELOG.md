@@ -5,13 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.0.5 (2021-10-19)
+
+### New Features
+
+ - <csr-id-51140f3bce3ac47048e9faab5af88441b5077048/> you may now bind local directories
+ - <csr-id-2ca5bb973a976c0e841a6dfea7cd508b4d295fc4/> add workdir option
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 3 commits contributed to the release.
+ - 3 commits where understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' where seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - you may now bind local directories ([`51140f3`](https://github.com/git//yxonic/srun.git/commit/51140f3bce3ac47048e9faab5af88441b5077048))
+    - add workdir option ([`2ca5bb9`](https://github.com/git//yxonic/srun.git/commit/2ca5bb973a976c0e841a6dfea7cd508b4d295fc4))
+    - simplify error handling ([`208f08d`](https://github.com/git//yxonic/srun.git/commit/208f08da7e258122937b184d1ad77040646a42b7))
+</details>
+
 ## v0.0.4 (2021-10-18)
 
 ### Commit Statistics
 
 <csr-read-only-do-not-edit/>
 
- - 4 commits contributed to the release.
+ - 5 commits contributed to the release.
  - 1 commit where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -22,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release srun v0.0.4 ([`f3c75cc`](https://github.com/git//yxonic/srun.git/commit/f3c75ccc83748a69c41fa851d9ad2364ecf2cc9b))
     - Release srun v0.0.4 ([`b326665`](https://github.com/git//yxonic/srun.git/commit/b3266654f35fc1ea2cd05bae8e823965e8b21b28))
     - Release srun v0.0.4 ([`f1e9de8`](https://github.com/git//yxonic/srun.git/commit/f1e9de8e9235e8d661a85af9b8f4721be4ce2e46))
     - Release srun v0.0.4 ([`4e5f3d5`](https://github.com/git//yxonic/srun.git/commit/4e5f3d5e5bba99a0026a38aa747c4a235e878bf3))
