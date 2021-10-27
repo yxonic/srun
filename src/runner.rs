@@ -7,9 +7,11 @@ use chrono::{DateTime, Utc};
 use crate::{
     asset::AssetManager,
     reporter::{Reporter, TextReporter},
-    sandbox::Sandbox,
+    sandbox::{RunOptions, Sandbox},
     Error,
 };
+
+pub use crate::sandbox::RunOptions as StageSpec;
 
 #[derive(Debug)]
 pub enum Status {
@@ -20,17 +22,6 @@ pub enum Status {
     FinishStage(String),
     Success,
     Error(String),
-}
-
-/// Defines a stage to be run by runner.
-#[derive(Debug)]
-pub struct StageSpec {
-    pub(crate) image: String,
-    pub(crate) extend: Vec<String>,
-    pub(crate) workdir: String,
-    pub(crate) script: Vec<String>,
-    pub(crate) envs: HashMap<String, String>,
-    pub(crate) mounts: HashMap<String, String>,
 }
 
 /// Task runner that prepares for the task, runs the task, tracks running state,
@@ -86,15 +77,7 @@ impl<T: RunnerReporter> Runner<'_, T> {
         self.set_status(Status::RunStage(name.into()))?;
 
         self.sandbox
-            .run(
-                &image,
-                &stage.workdir,
-                &stage.script,
-                &stage.envs,
-                &stage.mounts,
-                &self.assets.path(),
-                &self.reporter,
-            )
+            .run(&RunOptions { image, ..stage }, &self.assets, &self.reporter)
             .await
             .handle(self)?;
         Ok(())

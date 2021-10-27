@@ -3,9 +3,9 @@ image: python:3
 script:
   - pwd
   - ls
-  - cat /assets/srun/README.md
+  - cat /assets/srun/lorem.html | grep title
 workdir: /data
 assets:
-  srun/README.md: https://raw.githubusercontent.com/yxonic/srun/main/README.md
+  srun/lorem.html: https://www.lipsum.com
 mounts:
   /data: ./examples/

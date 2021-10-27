@@ -11,7 +11,18 @@ use shiplift::tty::TtyChunk;
 use shiplift::{BuildOptions, Container, ContainerOptions, Docker, LogsOptions};
 
 use crate::reporter::Reporter;
-use crate::Error;
+use crate::{AssetManager, Error};
+
+/// Defines a stage to be run by runner.
+#[derive(Debug)]
+pub struct RunOptions {
+    pub(crate) image: String,
+    pub(crate) extend: Vec<String>,
+    pub(crate) workdir: String,
+    pub(crate) script: Vec<String>,
+    pub(crate) envs: HashMap<String, String>,
+    pub(crate) mounts: HashMap<String, String>,
+}
 
 /// Represents a sandboxed environment for task building and running.
 pub struct Sandbox<'docker> {
@@ -84,20 +95,21 @@ impl Sandbox<'_> {
     /// Run scripts with envs.
     pub async fn run(
         &self,
-        image: &str,
-        workdir: &str,
-        script: &[String],
-        envs: &HashMap<String, String>,
-        mounts: &HashMap<String, String>,
-        asset_path: &Path,
+        options: &RunOptions,
+        asset: &AssetManager,
         reporter: &impl Reporter,
     ) -> Result<(), Error> {
-        log::info!("create container using {} with envs {:?}", image, envs);
+        log::info!(
+            "create container using {} with envs {:?}",
+            options.image,
+            options.envs
+        );
 
+        let asset_path = asset.path();
         let file_path = asset_path.join(".run.sh");
         log::debug!("writing stage script at: {:?}", file_path);
         let mut file = File::create(file_path)?;
-        for line in script {
+        for line in options.script.iter() {
             writeln!(file, "{}", line)?;
         }
         file.flush()?;
@@ -109,7 +121,7 @@ impl Sandbox<'_> {
                 .to_str()
                 .expect("path should always be valid utf-8 string")
         ));
-        for (k, v) in mounts {
+        for (k, v) in options.mounts.iter() {
             // TODO: check for permission
             binds.push(format!(
                 "{}:{}:ro",
@@ -121,13 +133,15 @@ impl Sandbox<'_> {
             ));
         }
 
-        let options = ContainerOptions::builder(image)
+        let options = ContainerOptions::builder(&options.image)
             .volumes(binds.iter().map(|s| s as &str).collect())
-            .working_dir(workdir)
+            .working_dir(&options.workdir)
             .cmd(vec!["sh", "-e", "/assets/.run.sh"])
             .env(
                 // TODO: probably better solution needed
-                envs.iter()
+                options
+                    .envs
+                    .iter()
                     .map(|(k, v)| format!("{}={}", k, v))
                     .collect::<Vec<String>>()
                     .iter()
