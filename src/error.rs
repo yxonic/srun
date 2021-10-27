@@ -12,6 +12,9 @@ pub enum Error {
     #[error("Error while accessing filesystem: {0:?}.")]
     IOError(std::io::Error),
 
+    #[error("Permission denied: {0}.")]
+    PermissionDeniedError(String),
+
     #[error("Error in cache system: {0:?}.")]
     CacheError(cached_path::Error),
 

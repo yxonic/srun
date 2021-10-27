@@ -6,6 +6,7 @@ use chrono::{DateTime, Utc};
 
 use crate::{
     asset::AssetManager,
+    permission::Permissions,
     reporter::{Reporter, TextReporter},
     sandbox::{RunOptions, Sandbox},
     Error,
@@ -29,9 +30,10 @@ pub enum Status {
 ///
 /// You should always initiate a new runner for each task.
 pub struct Runner<'docker, TReporter: RunnerReporter> {
-    assets: AssetManager,
     sandbox: Sandbox<'docker>,
     status: Status,
+    assets: AssetManager,
+    permisssions: Permissions,
     reporter: TReporter,
 }
 
@@ -41,6 +43,7 @@ impl Runner<'_, TextReporter> {
             sandbox: Sandbox::new(docker),
             assets: AssetManager::new()?,
             reporter: TextReporter {},
+            permisssions: Permissions::default(),
             status: Status::Start,
         })
     }
@@ -77,7 +80,12 @@ impl<T: RunnerReporter> Runner<'_, T> {
         self.set_status(Status::RunStage(name.into()))?;
 
         self.sandbox
-            .run(&RunOptions { image, ..stage }, &self.assets, &self.reporter)
+            .run(
+                &RunOptions { image, ..stage },
+                &self.assets,
+                &self.permisssions,
+                &self.reporter,
+            )
             .await
             .handle(self)?;
         Ok(())

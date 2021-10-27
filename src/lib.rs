@@ -5,6 +5,7 @@
 
 mod asset;
 mod error;
+mod permission;
 mod reporter;
 pub mod runner;
 pub mod sandbox;

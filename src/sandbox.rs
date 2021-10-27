@@ -10,6 +10,7 @@ use futures::StreamExt;
 use shiplift::tty::TtyChunk;
 use shiplift::{BuildOptions, Container, ContainerOptions, Docker, LogsOptions};
 
+use crate::permission::Permissions;
 use crate::reporter::Reporter;
 use crate::{AssetManager, Error};
 
@@ -97,6 +98,7 @@ impl Sandbox<'_> {
         &self,
         options: &RunOptions,
         asset: &AssetManager,
+        permissions: &Permissions,
         reporter: &impl Reporter,
     ) -> Result<(), Error> {
         log::info!(
@@ -122,14 +124,19 @@ impl Sandbox<'_> {
                 .expect("path should always be valid utf-8 string")
         ));
         for (k, v) in options.mounts.iter() {
-            // TODO: check for permission
+            let path = Path::new(v).canonicalize()?;
             binds.push(format!(
-                "{}:{}:ro",
-                Path::new(v)
-                    .canonicalize()?
-                    .to_str()
+                "{}:{}{}",
+                path.to_str()
                     .expect("path should always be valid utf-8 string"),
                 k,
+                if permissions.write.check(&path).is_ok() {
+                    ""
+                } else if let Err(e) = permissions.read.check(&path) {
+                    return Err(e);
+                } else {
+                    ":ro"
+                }
             ));
         }
 
@@ -154,7 +161,11 @@ impl Sandbox<'_> {
             .stop_timeout(Duration::from_secs(3 * 60))
             .cpus(1.0)
             .memory(1 << 30)
-            .network_mode("none")
+            .network_mode(if permissions.net.check().is_ok() {
+                "bridge"
+            } else {
+                "none"
+            })
             .auto_remove(true)
             .build();
 
