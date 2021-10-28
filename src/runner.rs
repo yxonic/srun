@@ -29,8 +29,8 @@ pub enum Status {
 /// and report the process.
 ///
 /// You should always initiate a new runner for each task.
-pub struct Runner<'docker, TReporter: RunnerReporter> {
-    sandbox: Sandbox<'docker>,
+pub struct Runner<'sandbox, TReporter: RunnerReporter> {
+    sandbox: Sandbox<'sandbox>,
     status: Status,
     assets: AssetManager,
     permisssions: Permissions,
@@ -38,7 +38,7 @@ pub struct Runner<'docker, TReporter: RunnerReporter> {
 }
 
 impl Runner<'_, TextReporter> {
-    pub fn new(docker: &shiplift::Docker) -> Result<Runner<TextReporter>, Error> {
+    pub fn new(docker: &bollard::Docker) -> Result<Runner<TextReporter>, Error> {
         Ok(Runner {
             sandbox: Sandbox::new(docker),
             assets: AssetManager::new()?,
@@ -81,13 +81,14 @@ impl<T: RunnerReporter> Runner<'_, T> {
 
         self.sandbox
             .run(
-                &RunOptions { image, ..stage },
+                RunOptions { image, ..stage },
                 &self.assets,
                 &self.permisssions,
                 &self.reporter,
             )
             .await
             .handle(self)?;
+
         Ok(())
     }
 }
