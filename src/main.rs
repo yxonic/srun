@@ -25,7 +25,7 @@ async fn main() -> Result<()> {
     let task_str = fs::read_to_string(file).context("task script not found")?;
     let task = Task::from_yaml(&task_str)?;
 
-    let docker = shiplift::Docker::new();
+    let docker = bollard::Docker::connect_with_socket_defaults()?;
 
     {
         let mut runner = Runner::new(&docker)?;

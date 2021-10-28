@@ -27,6 +27,9 @@ pub enum Error {
     #[error("Error while communicating with docker: {0:?}.")]
     DockerError(shiplift::Error),
 
+    #[error("Error while communicating with docker: {0:?}.")]
+    BollardError(bollard::errors::Error),
+
     #[error("Decoding error with docker logs: {0:?}.")]
     EncodingError(std::str::Utf8Error),
 
@@ -56,6 +59,12 @@ impl From<hyper::Error> for Error {
 impl From<shiplift::Error> for Error {
     fn from(e: shiplift::Error) -> Self {
         Error::DockerError(e)
+    }
+}
+
+impl From<bollard::errors::Error> for Error {
+    fn from(e: bollard::errors::Error) -> Self {
+        Error::BollardError(e)
     }
 }
 

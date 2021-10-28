@@ -1,29 +1,17 @@
-//! Low-level sandboxing and running facilities.
+use std::collections::HashMap;
+use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 use std::str::from_utf8;
-use std::time::Duration;
-use std::{collections::HashMap, fs::File};
 
+use bollard::container::{Config, LogOutput, LogsOptions};
+use bollard::image::BuildImageOptions;
+use bollard::models::HostConfig;
+use bollard::Docker;
 use futures::future::join;
 use futures::StreamExt;
-use shiplift::tty::TtyChunk;
-use shiplift::{BuildOptions, Container, ContainerOptions, Docker, LogsOptions};
 
-use crate::permission::Permissions;
-use crate::reporter::Reporter;
-use crate::{AssetManager, Error};
-
-/// Defines a stage to be run by runner.
-#[derive(Debug)]
-pub struct RunOptions {
-    pub(crate) image: String,
-    pub(crate) extend: Vec<String>,
-    pub(crate) workdir: String,
-    pub(crate) script: Vec<String>,
-    pub(crate) envs: HashMap<String, String>,
-    pub(crate) mounts: HashMap<String, String>,
-}
+use crate::{permission::Permissions, AssetManager, Error, Reporter};
 
 /// Represents a sandboxed environment for task building and running.
 pub struct Sandbox<'docker> {
@@ -51,8 +39,12 @@ impl Sandbox<'_> {
             }
         }
 
-        let options = BuildOptions::builder(dir_path).build();
-        let mut stream = self.docker.images().build(&options);
+        let options = BuildImageOptions::<String>::default();
+        let mut bytes = vec![];
+        tarball::dir(&mut bytes, dir_path)?;
+        let mut stream = self
+            .docker
+            .build_image(options, None, Some(hyper::Body::from(bytes)));
 
         log::info!(
             "building image for task from `{}` with {} lines of extend script",
@@ -63,12 +55,12 @@ impl Sandbox<'_> {
         while let Some(build_result) = stream.next().await {
             match build_result {
                 Ok(output) => {
-                    log::debug!("builder output: {}", output);
-                    if let Some(aux) = output.get("aux") {
-                        if let Some(id) = aux.get("ID") {
+                    log::debug!("builder output: {:?}", output);
+                    if let Some(aux) = output.aux {
+                        if let Some(id) = aux.id {
                             // extract image sha256 and return
                             // id is given in the form of "sha256:<id>" (with quotes)
-                            let id = id.to_string();
+                            let id = id;
                             let id = id
                                 .trim_matches('"')
                                 .split(':')
@@ -78,11 +70,11 @@ impl Sandbox<'_> {
                             return Ok(id.into());
                         }
                     }
-                    if let Some(error) = output.get("error") {
-                        return Err(Error::BuildError(error.to_string()));
+                    if let Some(error) = output.error {
+                        return Err(Error::BuildError(error));
                     }
                 }
-                Err(shiplift::Error::Hyper(e)) => {
+                Err(bollard::errors::Error::HyperResponseError { err: e }) => {
                     return Err(Error::ConnectionError(e));
                 }
                 Err(e) => {
@@ -96,7 +88,7 @@ impl Sandbox<'_> {
     /// Run scripts with envs.
     pub async fn run(
         &self,
-        options: &RunOptions,
+        options: RunOptions,
         asset: &AssetManager,
         permissions: &Permissions,
         reporter: &impl Reporter,
@@ -140,51 +132,64 @@ impl Sandbox<'_> {
             ));
         }
 
-        let options = ContainerOptions::builder(&options.image)
-            .volumes(binds.iter().map(|s| s as &str).collect())
-            .working_dir(&options.workdir)
-            .cmd(vec!["sh", "-e", "/assets/.run.sh"])
-            .env(
-                // TODO: probably better solution needed
+        let config = Config {
+            image: Some(options.image),
+            tty: Some(true),
+            attach_stdout: Some(true),
+            attach_stderr: Some(true),
+            env: Some(
                 options
                     .envs
                     .iter()
                     .map(|(k, v)| format!("{}={}", k, v))
-                    .collect::<Vec<String>>()
-                    .iter()
-                    .map(|s| s as &str)
-                    .collect::<Vec<&str>>(),
-            )
-            .attach_stdout(true)
-            .attach_stderr(true)
-            // TODO: make resource restrictions configurable
-            .stop_timeout(Duration::from_secs(3 * 60))
-            .cpus(1.0)
-            .memory(1 << 30)
-            .network_mode(if permissions.net.check().is_ok() {
-                "bridge"
+                    .collect::<Vec<String>>(),
+            ),
+            network_disabled: if permissions.net.check().is_ok() {
+                None
             } else {
-                "none"
-            })
-            .auto_remove(true)
-            .build();
+                Some(true)
+            },
+            stop_timeout: Some(3 * 60),
+            working_dir: Some(options.workdir),
+            cmd: Some(
+                vec!["sh", "-e", "/assets/.run.sh"]
+                    .into_iter()
+                    .map(|s| s.to_string())
+                    .collect(),
+            ),
+            host_config: Some(HostConfig {
+                nano_cpus: Some(1_000_000_000),
+                memory: Some(1 << 30),
+                binds: Some(binds),
+                auto_remove: Some(true),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
 
-        let container = self.docker.containers().create(&options).await?;
+        let container = self
+            .docker
+            .create_container::<String, String>(None, config)
+            .await?;
 
         log::info!("created container with id: {}", container.id);
 
-        let container = self.docker.containers().get(&container.id);
-        container.start().await?;
+        self.docker
+            .start_container::<String>(&container.id, None)
+            .await?;
 
         log::info!("container started");
 
         log::debug!("processing logs and wait for container to finish");
-        let log_op = self.process_logs(&container, reporter);
-        let wait_op = container.wait();
+
+        let log_op = self.process_logs(&container.id, reporter);
+        let mut stream = self.docker.wait_container::<String>(&container.id, None);
+        let wait_op = stream.next();
         let (log, exit) = join(log_op, wait_op).await;
 
         let _ = log?;
-        let e = exit?;
+        let e =
+            exit.ok_or_else(|| Error::UnknownError("failed to fetch wait response".into()))??;
 
         log::info!("container exited with code {}", e.status_code);
         if e.status_code > 0 {
@@ -193,7 +198,7 @@ impl Sandbox<'_> {
                 &format!("[program exited with code {}]", e.status_code),
                 chrono::Utc::now(),
             )?;
-            return Err(Error::ErrorCode(e.status_code));
+            return Err(Error::ErrorCode(e.status_code as u64));
         }
 
         Ok(())
@@ -201,17 +206,19 @@ impl Sandbox<'_> {
 
     async fn process_logs(
         &self,
-        container: &Container<'_>,
+        container_id: &str,
         reporter: &impl Reporter,
     ) -> Result<(), Error> {
-        let mut stream = container.logs(
-            &LogsOptions::builder()
-                .follow(true)
-                .timestamps(true)
-                .stdout(true)
-                .stderr(true)
-                .build(),
+        let mut stream = self.docker.logs::<String>(
+            container_id,
+            Some(LogsOptions {
+                stdout: true,
+                stderr: true,
+                follow: true,
+                ..Default::default()
+            }),
         );
+
         // TODO: get limit from configuration
         let mut limit = 500;
         while let Some(exec_result) = stream.next().await {
@@ -221,19 +228,104 @@ impl Sandbox<'_> {
             }
             let chunk = exec_result?;
             match chunk {
-                TtyChunk::StdOut(bytes) => {
+                LogOutput::StdOut { message: bytes } => {
                     let line = from_utf8(&bytes)?;
                     log::debug!("stdout | {}", line.trim_end());
-                    reporter.emit_stdout(line)?
+                    reporter.emit_stdout(line)?;
                 }
-                TtyChunk::StdErr(bytes) => {
+                LogOutput::StdErr { message: bytes } => {
                     let line = from_utf8(&bytes)?;
                     log::debug!("stderr | {}", line.trim_end());
-                    reporter.emit_stderr(line)?
+                    reporter.emit_stderr(line)?;
+                }
+                LogOutput::Console { message: bytes } => {
+                    let line = from_utf8(&bytes)?;
+                    log::debug!("console | {}", line.trim_end());
+                    reporter.emit_console(line)?;
                 }
                 _ => unreachable!(),
             };
         }
+        Ok(())
+    }
+}
+
+/// Defines a stage to be run by runner.
+#[derive(Debug)]
+pub struct RunOptions {
+    pub(crate) image: String,
+    pub(crate) extend: Vec<String>,
+    pub(crate) workdir: String,
+    pub(crate) script: Vec<String>,
+    pub(crate) envs: HashMap<String, String>,
+    pub(crate) mounts: HashMap<String, String>,
+}
+
+mod tarball {
+    // copied from shiplift
+    use crate::Error;
+    use flate2::{write::GzEncoder, Compression};
+    use std::{
+        fs::{self, File},
+        io::{self, Write},
+        path::{Path, MAIN_SEPARATOR},
+    };
+    use tar::Builder;
+
+    // todo: this is pretty involved. (re)factor this into its own crate
+    pub fn dir<W>(buf: W, path: &str) -> Result<(), Error>
+    where
+        W: Write,
+    {
+        let mut archive = Builder::new(GzEncoder::new(buf, Compression::best()));
+        fn bundle<F>(dir: &Path, f: &mut F, bundle_dir: bool) -> io::Result<()>
+        where
+            F: FnMut(&Path) -> io::Result<()>,
+        {
+            if fs::metadata(dir)?.is_dir() {
+                if bundle_dir {
+                    f(dir)?;
+                }
+                for entry in fs::read_dir(dir)? {
+                    let entry = entry?;
+                    if fs::metadata(entry.path())?.is_dir() {
+                        bundle(&entry.path(), f, true)?;
+                    } else {
+                        f(entry.path().as_path())?;
+                    }
+                }
+            }
+            Ok(())
+        }
+
+        {
+            let base_path = Path::new(path).canonicalize()?;
+            // todo: don't unwrap
+            let mut base_path_str = base_path.to_str().unwrap().to_owned();
+            if let Some(last) = base_path_str.chars().last() {
+                if last != MAIN_SEPARATOR {
+                    base_path_str.push(MAIN_SEPARATOR)
+                }
+            }
+
+            let mut append = |path: &Path| {
+                let canonical = path.canonicalize()?;
+                // todo: don't unwrap
+                let relativized = canonical
+                    .to_str()
+                    .expect("canonical path must be valid")
+                    .trim_start_matches(&base_path_str[..]);
+                if path.is_dir() {
+                    archive.append_dir(Path::new(relativized), &canonical)?
+                } else {
+                    archive.append_file(Path::new(relativized), &mut File::open(&canonical)?)?
+                }
+                Ok(())
+            };
+            bundle(Path::new(path), &mut append, false)?;
+        }
+        archive.finish()?;
+
         Ok(())
     }
 }

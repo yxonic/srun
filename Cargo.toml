@@ -14,17 +14,20 @@ required-features = ["cli"]
 
 [dependencies]
 anyhow = { version = "1", optional = true }
+bollard = "0.11"
 cached-path = "0.5"
 chrono = "0.4"
 clap = { version = "3.0.0-beta.5", optional = true }
 data-url = "0.1"
 env_logger = { version = "0.9", optional = true }
+flate2 = "1"
 futures = "0.3"
 hyper = "0.14"
 log = "0.4"
 serde = { version = "1", features = ["derive"] }
 serde_yaml = { version = "0.8", optional = true }
 shiplift = "0.7"
+tar = "0.4"
 tempfile = "3"
 thiserror = "1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"], optional = true }
