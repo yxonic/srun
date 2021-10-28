@@ -166,3 +166,134 @@ impl Default for Permissions {
         }
     }
 }
+
+impl Permissions {
+    pub fn from_options(opts: &PermissionsOptions) -> Self {
+        Self {
+            read: UnaryPermission {
+                global_state: global_state_from_option(&opts.allow_read),
+                granted_list: resolve_read_allowlist(&opts.allow_read),
+                ..Default::default()
+            },
+            write: UnaryPermission {
+                global_state: global_state_from_option(&opts.allow_write),
+                granted_list: resolve_write_allowlist(&opts.allow_write),
+                ..Default::default()
+            },
+            net: UnitPermission {
+                name: "net",
+                state: if opts.allow_net {
+                    PermissionState::Granted
+                } else {
+                    PermissionState::Denied
+                },
+            },
+        }
+    }
+}
+
+fn global_state_from_option<T>(flag: &Option<Vec<T>>) -> PermissionState {
+    if matches!(flag, Some(v) if v.is_empty()) {
+        PermissionState::Granted
+    } else {
+        PermissionState::Denied
+    }
+}
+
+pub fn resolve_read_allowlist(allow: &Option<Vec<PathBuf>>) -> HashSet<ReadDescriptor> {
+    if let Some(v) = allow {
+        v.iter()
+            .map(|raw_path| ReadDescriptor(raw_path.clone()))
+            .collect()
+    } else {
+        HashSet::new()
+    }
+}
+
+pub fn resolve_write_allowlist(allow: &Option<Vec<PathBuf>>) -> HashSet<WriteDescriptor> {
+    if let Some(v) = allow {
+        v.iter()
+            .map(|raw_path| WriteDescriptor(raw_path.clone()))
+            .collect()
+    } else {
+        HashSet::new()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Default)]
+pub struct PermissionsOptions {
+    pub allow_read: Option<Vec<PathBuf>>,
+    pub allow_write: Option<Vec<PathBuf>>,
+    pub allow_net: bool,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn check_paths() {
+        let allowlist = vec![
+            PathBuf::from("/a/specific/dir/name"),
+            PathBuf::from("/a/specific"),
+            PathBuf::from("/b/c"),
+        ];
+
+        let perms = Permissions::from_options(&PermissionsOptions {
+            allow_read: Some(allowlist.clone()),
+            allow_write: Some(allowlist),
+            ..Default::default()
+        });
+
+        // Inside of /a/specific and /a/specific/dir/name
+        assert!(perms.read.check(Path::new("/a/specific/dir/name")).is_ok());
+        assert!(perms.write.check(Path::new("/a/specific/dir/name")).is_ok());
+
+        // Inside of /a/specific but outside of /a/specific/dir/name
+        assert!(perms.read.check(Path::new("/a/specific/dir")).is_ok());
+        assert!(perms.write.check(Path::new("/a/specific/dir")).is_ok());
+
+        // Inside of /a/specific and /a/specific/dir/name
+        assert!(perms
+            .read
+            .check(Path::new("/a/specific/dir/name/inner"))
+            .is_ok());
+        assert!(perms
+            .write
+            .check(Path::new("/a/specific/dir/name/inner"))
+            .is_ok());
+
+        // Inside of /a/specific but outside of /a/specific/dir/name
+        assert!(perms.read.check(Path::new("/a/specific/other/dir")).is_ok());
+        assert!(perms
+            .write
+            .check(Path::new("/a/specific/other/dir"))
+            .is_ok());
+
+        // Exact match with /b/c
+        assert!(perms.read.check(Path::new("/b/c")).is_ok());
+        assert!(perms.write.check(Path::new("/b/c")).is_ok());
+
+        // Sub path within /b/c
+        assert!(perms.read.check(Path::new("/b/c/sub/path")).is_ok());
+        assert!(perms.write.check(Path::new("/b/c/sub/path")).is_ok());
+
+        // Sub path within /b/c, needs normalizing
+        assert!(perms
+            .read
+            .check(Path::new("/b/c/sub/path/../path/."))
+            .is_ok());
+        assert!(perms
+            .write
+            .check(Path::new("/b/c/sub/path/../path/."))
+            .is_ok());
+
+        // Inside of /b but outside of /b/c
+        assert!(perms.read.check(Path::new("/b/e")).is_err());
+        assert!(perms.write.check(Path::new("/b/e")).is_err());
+
+        // Inside of /a but outside of /a/specific
+        assert!(perms.read.check(Path::new("/a/b")).is_err());
+        assert!(perms.write.check(Path::new("/a/b")).is_err());
+    }
+}

@@ -1,11 +1,11 @@
 name: main
 image: python:3  
 script:
-  - pwd
-  - ls
-  - cat /assets/srun/lorem.html | grep title
+  - cat task-with-assets.yaml
+  - echo
+  - cat /assets/srun/rust.html | grep title
 workdir: /data
 assets:
-  srun/lorem.html: https://www.lipsum.com
+  srun/rust.html: https://prev.rust-lang.org
 mounts:
   /data: ./examples/

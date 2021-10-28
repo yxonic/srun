@@ -38,12 +38,18 @@ pub struct Runner<'docker, TReporter: RunnerReporter> {
 }
 
 impl Runner<'_, TextReporter> {
-    pub fn new(docker: &shiplift::Docker) -> Result<Runner<TextReporter>, Error> {
+    pub fn new(
+        docker: &shiplift::Docker,
+        permissions: Option<Permissions>,
+    ) -> Result<Runner<TextReporter>, Error> {
         Ok(Runner {
             sandbox: Sandbox::new(docker),
             assets: AssetManager::new()?,
             reporter: TextReporter {},
-            permisssions: Permissions::default(),
+            permisssions: match permissions {
+                Some(p) => p,
+                _ => Permissions::default(),
+            },
             status: Status::Start,
         })
     }
