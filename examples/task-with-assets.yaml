@@ -1,8 +1,7 @@
 name: main
 image: python:3  
 script:
-  - cat task-with-assets.yaml
-  - echo
+  - ls
   - cat /assets/srun/rust.html | grep title
 workdir: /data
 assets:

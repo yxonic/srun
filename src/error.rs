@@ -25,9 +25,6 @@ pub enum Error {
     ConnectionError(hyper::Error),
 
     #[error("Error while communicating with docker: {0:?}.")]
-    DockerError(shiplift::Error),
-
-    #[error("Error while communicating with docker: {0:?}.")]
     BollardError(bollard::errors::Error),
 
     #[error("Decoding error with docker logs: {0:?}.")]
@@ -53,12 +50,6 @@ impl From<cached_path::Error> for Error {
 impl From<hyper::Error> for Error {
     fn from(e: hyper::Error) -> Self {
         Error::ConnectionError(e)
-    }
-}
-
-impl From<shiplift::Error> for Error {
-    fn from(e: shiplift::Error) -> Self {
-        Error::DockerError(e)
     }
 }
 
