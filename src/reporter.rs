@@ -16,7 +16,9 @@ pub trait Reporter {
             DateTime::parse_from_rfc3339(ts).expect("expect timestamp to be of RFC3339");
         self.report_stderr(line.trim_end(), timestamp.into())
     }
-
+    fn emit_console(&self, line: &str) -> Result<(), Error> {
+        self.report_stdout(line.trim_end(), Utc::now())
+    }
     fn report_stdout(&self, line: &str, timestamp: DateTime<Utc>) -> Result<(), Error>;
     fn report_stderr(&self, line: &str, timestamp: DateTime<Utc>) -> Result<(), Error>;
 }

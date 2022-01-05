@@ -16,7 +16,11 @@ async fn main() -> Result<()> {
                 .required(true)
                 .index(1),
         )
-        .arg(Arg::new("allow-net").about("Allow network access").long("--allow-net"))
+        .arg(
+            Arg::new("allow-net")
+                .about("Allow network access")
+                .long("--allow-net"),
+        )
         .arg(
             Arg::new("allow-read")
                 .about("Allow read access")
@@ -40,7 +44,7 @@ async fn main() -> Result<()> {
     let task_str = fs::read_to_string(file).context("task script not found")?;
     let task = Task::from_yaml(&task_str)?;
 
-    let docker = shiplift::Docker::new();
+    let docker = bollard::Docker::connect_with_socket_defaults()?;
 
     let permissions = Permissions::from_options(&PermissionsOptions {
         allow_read: matches.values_of("allow-read").map(|e| {
