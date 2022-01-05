@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.0.7 (2021-10-28)
+
+### New Features
+
+ - <csr-id-81020a63c471aa52da8113a7a19a746192a97841/> add permission cli options
+ - <csr-id-0f1f703fc4f68de621b79eafd7f31716244f4737/> add permission support
+
+### Commit Statistics
+
+<csr-read-only-do-not-edit/>
+
+ - 3 commits contributed to the release.
+ - 3 commits where understood as [conventional](https://www.conventionalcommits.org).
+ - 0 issues like '(#ID)' where seen in commit messages
+
+### Commit Details
+
+<csr-read-only-do-not-edit/>
+
+<details><summary>view details</summary>
+
+ * **Uncategorized**
+    - add permission cli options ([`81020a6`](https://github.com/git//yxonic/srun.git/commit/81020a63c471aa52da8113a7a19a746192a97841))
+    - add permission support ([`0f1f703`](https://github.com/git//yxonic/srun.git/commit/0f1f703fc4f68de621b79eafd7f31716244f4737))
+    - extract run options; fix clippy ([`ab1d67f`](https://github.com/git//yxonic/srun.git/commit/ab1d67f737adbefd869890080b9d8de8763b65c4))
+</details>
+
 ## v0.0.6 (2021-10-19)
 
 ### New Features
@@ -15,7 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <csr-read-only-do-not-edit/>
 
- - 1 commit contributed to the release.
+ - 2 commits contributed to the release.
  - 1 commit where understood as [conventional](https://www.conventionalcommits.org).
  - 0 issues like '(#ID)' where seen in commit messages
 
@@ -26,6 +53,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <details><summary>view details</summary>
 
  * **Uncategorized**
+    - Release srun v0.0.6 ([`b41eecc`](https://github.com/git//yxonic/srun.git/commit/b41eeccb9ab30eea41b32ae54d1fd712453dac93))
     - add asset manager ([`ca02d21`](https://github.com/git//yxonic/srun.git/commit/ca02d21d9ae4d0e15f52ab9c1764715b5c51002d))
 </details>
 

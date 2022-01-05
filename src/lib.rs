@@ -13,6 +13,8 @@ mod task;
 
 pub use asset::AssetManager;
 pub use error::Error;
+pub use permission::Permissions;
+pub use permission::PermissionsOptions;
 pub use reporter::Reporter;
 pub use runner::Runner;
 pub use sandbox::Sandbox;

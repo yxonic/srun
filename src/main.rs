@@ -1,9 +1,9 @@
-use std::convert::TryInto;
 use std::fs;
+use std::{convert::TryInto, path::PathBuf};
 
 use anyhow::{Context, Result};
 use clap::{App, Arg};
-use srun::{Runner, Task};
+use srun::{Permissions, PermissionsOptions, Runner, Task};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -16,6 +16,25 @@ async fn main() -> Result<()> {
                 .required(true)
                 .index(1),
         )
+        .arg(
+            Arg::new("allow-net")
+                .about("Allow network access")
+                .long("--allow-net"),
+        )
+        .arg(
+            Arg::new("allow-read")
+                .about("Allow read access")
+                .long("--allow-read")
+                .takes_value(true)
+                .multiple_values(true),
+        )
+        .arg(
+            Arg::new("allow-write")
+                .about("Allow write access")
+                .long("--allow-write")
+                .takes_value(true)
+                .multiple_values(true),
+        )
         .get_matches();
 
     let file = matches
@@ -27,8 +46,32 @@ async fn main() -> Result<()> {
 
     let docker = bollard::Docker::connect_with_socket_defaults()?;
 
+    let permissions = Permissions::from_options(&PermissionsOptions {
+        allow_read: matches.values_of("allow-read").map(|e| {
+            e.map(|v| {
+                PathBuf::from(v)
+                    .canonicalize()
+                    .context(format!("path {} not exist", v))
+                    .unwrap()
+            })
+            .collect()
+        }),
+        allow_write: matches.values_of("allow-write").map(|e| {
+            e.map(|v| {
+                PathBuf::from(v)
+                    .canonicalize()
+                    .context(format!("path {} not exist", v))
+                    .unwrap()
+            })
+            .collect()
+        }),
+        allow_net: matches.is_present("allow-net"),
+    });
+
+    log::info!("run with permission: {:?}", permissions);
+
     {
-        let mut runner = Runner::new(&docker)?;
+        let mut runner = Runner::new(&docker, Some(permissions))?;
         let r = task.run(&mut runner).await;
         if let Err(srun::Error::ErrorCode(code)) = r {
             std::process::exit(code.try_into().unwrap());
